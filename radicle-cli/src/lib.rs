@@ -5,3 +5,5 @@ pub mod commands;
 pub mod git;
 pub mod project;
 pub mod terminal;
+#[cfg(feature = "tui")]
+pub mod tui;
