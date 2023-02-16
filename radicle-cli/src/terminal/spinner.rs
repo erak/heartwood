@@ -1,7 +1,7 @@
-use dialoguer::console::style;
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 
 use crate::terminal as term;
+use crate::terminal::styling::style;
 
 pub struct Spinner {
     progress: ProgressBar,
@@ -52,7 +52,7 @@ impl Spinner {
 
     pub fn set_failed(&mut self) {
         self.progress.finish_and_clear();
-        term::println(style("!!").red().reverse(), &self.message);
+        term::println(style("×").red(), &self.message);
     }
 }
 

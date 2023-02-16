@@ -1,7 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use dialoguer::{console::style, console::Style, theme::ColorfulTheme, Input, Password};
+use inquire::ui::{ErrorMessageRenderConfig, StyleSheet, Styled};
+use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select, Text};
 
 use radicle::cob::issue::Issue;
 use radicle::cob::thread::CommentId;
@@ -15,6 +16,7 @@ use radicle_crypto::ssh::keystore::MemorySigner;
 use super::command;
 use super::format;
 use super::spinner::spinner;
+use super::style;
 use super::Error;
 
 pub const TAB: &str = "    ";
@@ -45,11 +47,11 @@ pub use success;
 pub use tip;
 
 pub fn success_args(args: fmt::Arguments) {
-    println!("{} {args}", style("ok").green().reverse());
+    println!("{} {args}", style("✓").green());
 }
 
 pub fn tip_args(args: fmt::Arguments) {
-    println!("{} {}", style("=>").blue(), style(format!("{args}")).dim());
+    println!("👉 {}", style(format!("{args}")).italic());
 }
 
 pub fn width() -> Option<usize> {
@@ -66,7 +68,7 @@ pub fn headline(headline: &str) {
 
 pub fn header(header: &str) {
     println!();
-    println!("{}", style(format::yellow(header)).bold().underlined());
+    println!("{}", style(format::yellow(header)).bold().underline());
     println!();
 }
 
@@ -95,7 +97,7 @@ pub fn help(name: &str, version: &str, description: &str, usage: &str) {
 pub fn usage(name: &str, usage: &str) {
     println!(
         "{} {}\n{}",
-        style("==").red(),
+        style("×").red(),
         style(format!("Error: rad-{name}: invalid usage")).red(),
         style(prefixed(TAB, usage)).red().dim()
     );
@@ -115,57 +117,40 @@ pub fn subcommand(msg: impl fmt::Display) {
 
 pub fn warning(warning: &str) {
     println!(
-        "{} {} {}",
-        style("**").yellow(),
+        "{} {} {warning}",
+        style("!").yellow(),
         style("Warning:").yellow().bold(),
-        style(warning).yellow()
     );
 }
 
 pub fn error(error: impl fmt::Display) {
-    println!("{} {}", style("==").red(), style(error).red());
+    println!("{} {error}", style("×").red());
 }
 
 pub fn fail(header: &str, error: &anyhow::Error) {
     let err = error.to_string();
     let err = err.trim_end();
-    let separator = if err.len() > 160 || err.contains('\n') {
-        "\n"
-    } else {
-        " "
-    };
+    let separator = if err.contains('\n') { ":\n" } else { ": " };
 
     println!(
-        "{} {}{}{}",
-        style("==").red(),
-        style(header).red().reverse(),
-        separator,
-        style(error).red().bold(),
+        "{} {}{}{error}",
+        style("×").red(),
+        style(header).red().bold(),
+        style(separator).red(),
     );
 
-    let cause = error.root_cause();
-    if cause.to_string() != error.to_string() {
-        println!(
-            "{} {}",
-            style("==").red().dim(),
-            style(error.root_cause()).red().dim()
-        );
-        blank();
-    }
-
     if let Some(Error::WithHint { hint, .. }) = error.downcast_ref::<Error>() {
-        println!("{} {}", style("==").yellow(), style(hint).yellow(),);
+        println!("{} {}", style("×").yellow(), style(hint).yellow());
         blank();
     }
 }
 
 pub fn ask<D: fmt::Display>(prompt: D, default: bool) -> bool {
-    dialoguer::Confirm::new()
-        .with_prompt(format!("{} {}", style(" ⤷".to_owned()).cyan(), prompt))
-        .wait_for_newline(false)
-        .default(true)
-        .default(default)
-        .interact()
+    let prompt = format!("{} {}", style("☞".to_owned()).white(), prompt);
+
+    Confirm::new(&prompt)
+        .with_default(true)
+        .prompt()
         .unwrap_or_default()
 }
 
@@ -191,21 +176,52 @@ pub fn signer(profile: &Profile) -> anyhow::Result<Box<dyn Signer>> {
     Ok(signer.boxed())
 }
 
-pub fn theme() -> ColorfulTheme {
-    ColorfulTheme {
-        success_prefix: style("ok".to_owned()).for_stderr().green().reverse(),
-        prompt_prefix: style(" ⤷".to_owned()).cyan().dim().for_stderr(),
-        prompt_suffix: style("·".to_owned()).cyan().for_stderr(),
-        prompt_style: Style::new().cyan().bold().for_stderr(),
-        active_item_style: Style::new().for_stderr().yellow().reverse(),
-        active_item_prefix: style("*".to_owned()).yellow().for_stderr(),
-        picked_item_prefix: style("*".to_owned()).yellow().for_stderr(),
-        inactive_item_prefix: style(" ".to_string()).for_stderr(),
-        inactive_item_style: Style::new().yellow().for_stderr(),
-        error_prefix: style("⤹  Error:".to_owned()).red().for_stderr(),
-        success_suffix: style("·".to_owned()).cyan().for_stderr(),
+// pub fn theme() -> ColorfulTheme {
+//     ColorfulTheme {
+//         success_prefix: style("✓".to_owned()).for_stderr().green(),
+//         prompt_prefix: style("☛".to_owned()).white().for_stderr(),
+//         prompt_suffix: style("".to_owned()).cyan().for_stderr(),
+//         prompt_style: Style::new().cyan().bold().for_stderr(),
+//         active_item_style: Style::new().for_stderr().yellow().reverse(),
+//         active_item_prefix: style("☛".to_owned()).yellow().for_stderr(),
+//         picked_item_prefix: style("☛".to_owned()).yellow().for_stderr(),
+//         inactive_item_prefix: style(" ".to_string()).for_stderr(),
+//         inactive_item_style: Style::new().yellow().for_stderr(),
+//         error_prefix: style("× Error:".to_owned()).red().for_stderr(),
+//         success_suffix: style(":".to_owned()).cyan().for_stderr(),
 
-        ..ColorfulTheme::default()
+//         ..ColorfulTheme::default()
+//     }
+// }
+
+fn theme() -> RenderConfig {
+    RenderConfig {
+        prompt: StyleSheet::new().with_fg(Color::LightCyan),
+        prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
+        answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
+        answer: StyleSheet::new(),
+        error_message: ErrorMessageRenderConfig::default_colored()
+            .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
+        ..RenderConfig::default_colored() // prompt_prefix: Styled<&'static str>,
+                                          // answered_prompt_prefix: Styled<&'static str>,
+                                          // prompt: StyleSheet,
+                                          // default_value: StyleSheet,
+                                          // placeholder: StyleSheet,
+                                          // help_message: StyleSheet,
+                                          // password_mask: char,
+                                          // text_input: StyleSheet,
+                                          // answer: StyleSheet,
+                                          // canceled_prompt_indicator: Styled<&'static str>,
+                                          // error_message: ErrorMessageRenderConfig,
+                                          // highlighted_option_prefix: Styled<&'static str>,
+                                          // scroll_up_prefix: Styled<&'static str>,
+                                          // scroll_down_prefix: Styled<&'static str>,
+                                          // selected_checkbox: Styled<&'static str>,
+                                          // unselected_checkbox: Styled<&'static str>,
+                                          // option_index_prefix: IndexPrefix,
+                                          // option: StyleSheet,
+                                          // calendar: CalendarRenderConfig,
+                                          // editor_prompt: StyleSheet,
     }
 }
 
@@ -215,14 +231,11 @@ where
     E: fmt::Debug + fmt::Display,
 {
     let theme = theme();
-    let mut input: Input<S> = Input::with_theme(&theme);
+    let mut input = CustomType::<S>::new(message).with_render_config(theme);
 
     let value = match default {
-        Some(default) => input
-            .with_prompt(message)
-            .with_initial_text(default.to_string())
-            .interact_text()?,
-        None => input.with_prompt(message).interact_text()?,
+        Some(default) => input.with_default(default).prompt()?,
+        None => input.prompt()?,
     };
     Ok(value)
 }
@@ -255,30 +268,24 @@ impl<T: FromStr> FromStr for Optional<T> {
     }
 }
 
-pub fn text_input_optional<S, E>(
-    message: &str,
-    initial: Option<String>,
-) -> anyhow::Result<Option<S>>
+pub fn text_input_optional<S, E>(message: &str, initial: Option<S>) -> anyhow::Result<Option<S>>
 where
     S: fmt::Display + fmt::Debug + FromStr<Err = E> + Clone,
     E: fmt::Debug + fmt::Display,
 {
     let theme = theme();
-    let mut input: Input<Optional<S>> = Input::with_theme(&theme);
-
-    if let Some(init) = initial {
-        input.with_initial_text(init);
-    }
-    let value = input
-        .with_prompt(message)
-        .allow_empty(true)
-        .interact_text()?;
+    let input = CustomType::<Optional<S>>::new(message).with_render_config(theme);
+    let value = if let Some(init) = initial {
+        input.with_default(Optional { option: Some(init) }).prompt()
+    } else {
+        input.prompt()
+    }?;
 
     Ok(value.option)
 }
 
 pub fn secret_input() -> Passphrase {
-    secret_input_with_prompt("Passphrase")
+    secret_input_with_prompt("Passphrase:")
 }
 
 // TODO: This prompt shows success just for entering a password,
@@ -286,20 +293,23 @@ pub fn secret_input() -> Passphrase {
 // We should handle this differently.
 pub fn secret_input_with_prompt(prompt: &str) -> Passphrase {
     Passphrase::from(
-        Password::with_theme(&theme())
-            .allow_empty_password(true)
-            .with_prompt(prompt)
-            .interact()
+        Password::new(prompt)
+            .with_render_config(theme())
+            .with_display_mode(inquire::PasswordDisplayMode::Masked)
+            .without_confirmation()
+            .prompt()
             .unwrap(),
     )
 }
 
 pub fn secret_input_with_confirmation() -> Passphrase {
     Passphrase::from(
-        Password::with_theme(&theme())
-            .with_prompt("Passphrase")
-            .with_confirmation("Repeat passphrase", "Error: the passphrases don't match.")
-            .interact()
+        Password::new("Passphrase:")
+            .with_render_config(theme())
+            .with_display_mode(inquire::PasswordDisplayMode::Masked)
+            .with_custom_confirmation_message("Repeat passphrase:")
+            .with_custom_confirmation_error_message("The passphrases don't match.")
+            .prompt()
             .unwrap(),
     )
 }
@@ -330,21 +340,22 @@ pub fn read_passphrase(stdin: bool, confirm: bool) -> Result<Passphrase, anyhow:
 
 pub fn select<'a, T>(options: &'a [T], active: &'a T) -> Option<&'a T>
 where
-    T: fmt::Display + Eq + PartialEq,
+    T: fmt::Display + Eq + PartialEq + Clone,
 {
     let theme = theme();
     let active = options.iter().position(|o| o == active);
-    let mut selection = dialoguer::Select::with_theme(&theme);
+    let selection = Select::new("", options.iter().collect::<Vec<_>>()).with_render_config(theme);
 
-    if let Some(active) = active {
-        selection.default(active);
-    }
-    let result = selection
-        .items(&options.iter().map(|p| p.to_string()).collect::<Vec<_>>())
-        .interact_opt()
-        .unwrap();
+    let result = if let Some(active) = active {
+        selection
+            .with_starting_cursor(active)
+            .prompt_skippable()
+            .unwrap()
+    } else {
+        selection.prompt_skippable().unwrap()
+    };
 
-    result.map(|i| &options[i])
+    result
 }
 
 pub fn select_with_prompt<'a, T>(prompt: &str, options: &'a [T], active: &'a T) -> Option<&'a T>
@@ -353,38 +364,39 @@ where
 {
     let theme = theme();
     let active = options.iter().position(|o| o == active);
-    let mut selection = dialoguer::Select::with_theme(&theme);
+    let selection =
+        Select::new(prompt, options.iter().collect::<Vec<_>>()).with_render_config(theme);
 
-    selection.with_prompt(prompt);
-
-    if let Some(active) = active {
-        selection.default(active);
+    let result = if let Some(active) = active {
+        selection.with_starting_cursor(active).prompt_skippable()
+    } else {
+        selection.prompt_skippable()
     }
-    let result = selection
-        .items(&options.iter().map(|p| p.to_string()).collect::<Vec<_>>())
-        .interact_opt()
-        .unwrap();
+    .unwrap();
 
-    result.map(|i| &options[i])
+    result
 }
 
 pub fn comment_select(issue: &Issue) -> Option<CommentId> {
-    let selection = dialoguer::Select::with_theme(&theme())
-        .with_prompt("Which comment do you want to react to?")
-        .item(issue.description().unwrap_or_default())
-        .items(
-            &issue
-                .comments()
-                .map(|(_, i)| i.body().to_owned())
-                .collect::<Vec<_>>(),
-        )
-        .default(0)
-        .interact_opt()
-        .unwrap();
+    todo!();
+    // let mut items = vec![issue.description().unwrap_or_default()];
+    // items.extend(
+    //     issue
+    //         .comments()
+    //         .map(|(, i)| i.body().to_owned())
+    //         .collect::<Vec<_>>(),
+    // );
 
-    selection
-        .and_then(|n| issue.comments().nth(n))
-        .map(|(id, _)| *id)
+    // let theme = theme();
+    // let selection = Select::new("Which comment do you want to react to?", items)
+    //     .with_render_config(theme)
+    //     .with_starting_cursor(0)
+    //     .prompt()
+    //     .unwrap();
+
+    // selection
+    //     .and_then(|n| issue.comments().nth(n))
+    //     .map(|(id, _)| *id)
 }
 
 pub fn markdown(content: &str) {
@@ -411,39 +423,41 @@ pub mod proposal {
     pub fn revision_select(
         proposal: &Proposal,
     ) -> Option<(&identity::RevisionId, &identity::Revision)> {
-        let selection = dialoguer::Select::with_theme(&theme())
-            .with_prompt("Which revision do you want to select?")
-            .items(
-                &proposal
-                    .revisions()
-                    .map(|(rid, _)| rid.to_string())
-                    .collect::<Vec<_>>(),
-            )
-            .default(0)
-            .interact_opt()
-            .unwrap();
+        todo!();
+        // let selection = dialoguer::Select::with_theme(&theme())
+        //     .with_prompt("Which revision do you want to select?")
+        //     .items(
+        //         &proposal
+        //             .revisions()
+        //             .map(|(rid, _)| rid.to_string())
+        //             .collect::<Vec<_>>(),
+        //     )
+        //     .default(0)
+        //     .interact_opt()
+        //     .unwrap();
 
-        selection.and_then(|n| proposal.revisions().nth(n))
+        // selection.and_then(|n| proposal.revisions().nth(n))
     }
 
     pub fn revision_commit_select<'a>(
         proposal: &'a Proposal,
         previous: &'a Identity<Oid>,
     ) -> Option<(&'a identity::RevisionId, &'a identity::Revision)> {
-        let selection = dialoguer::Select::with_theme(&theme())
-            .with_prompt("Which revision do you want to commit?")
-            .items(
-                &proposal
-                    .revisions()
-                    .filter(|(_, r)| r.is_quorum_reached(previous))
-                    .map(|(rid, _)| rid.to_string())
-                    .collect::<Vec<_>>(),
-            )
-            .default(0)
-            .interact_opt()
-            .unwrap();
+        todo!();
+        // let selection = dialoguer::Select::with_theme(&theme())
+        //     .with_prompt("Which revision do you want to commit?")
+        //     .items(
+        //         &proposal
+        //             .revisions()
+        //             .filter(|(_, r)| r.is_quorum_reached(previous))
+        //             .map(|(rid, _)| rid.to_string())
+        //             .collect::<Vec<_>>(),
+        //     )
+        //     .default(0)
+        //     .interact_opt()
+        //     .unwrap();
 
-        selection.and_then(|n| proposal.revisions().nth(n))
+        // selection.and_then(|n| proposal.revisions().nth(n))
     }
 
     pub fn diff(proposal: &identity::Revision, previous: &Identity<Oid>) -> anyhow::Result<String> {

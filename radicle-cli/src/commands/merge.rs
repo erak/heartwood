@@ -312,19 +312,19 @@ fn merge_commit(
     writeln!(&mut merge_msg, "{}", MERGE_HELP_MSG.trim())?;
 
     // Offer user the chance to edit the message before committing.
-    let merge_msg = match term::Editor::new()
-        .require_save(true)
-        .trim_newlines(true)
-        .extension(".git-commit")
-        .edit(&merge_msg)
-        .unwrap()
+    let merge_msg = match term::Editor::new("")
+        .with_predefined_text(&merge_msg)
+        // .require_save(true)
+        // .trim_newlines(true)
+        .with_file_extension(".git-commit")
+        .prompt()
     {
-        Some(s) => s
+        Ok(s) => s
             .lines()
             .filter(|l| !l.starts_with('#'))
             .collect::<Vec<_>>()
             .join("\n"),
-        None => anyhow::bail!("user aborted merge"),
+        Err(_) => anyhow::bail!("user aborted merge"),
     };
 
     // Empty message aborts merge.

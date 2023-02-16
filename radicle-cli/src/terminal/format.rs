@@ -1,6 +1,6 @@
 use std::{fmt, time};
 
-pub use dialoguer::console::style;
+pub use crate::terminal::styling::style;
 
 use radicle::cob::{ObjectId, Timestamp};
 use radicle::node::NodeId;
@@ -89,15 +89,15 @@ impl<'a> fmt::Display for Identity<'a> {
 }
 
 pub fn negative<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).red().bright().to_string()
+    style(msg).bright_red().to_string()
 }
 
 pub fn positive<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).green().bright().to_string()
+    style(msg).bright_green().to_string()
 }
 
 pub fn secondary<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).blue().bright().to_string()
+    style(msg).bright_blue().to_string()
 }
 
 pub fn tertiary<D: std::fmt::Display>(msg: D) -> String {
@@ -113,7 +113,7 @@ pub fn yellow<D: std::fmt::Display>(msg: D) -> String {
 }
 
 pub fn highlight<D: std::fmt::Display>(input: D) -> String {
-    style(input).green().bright().to_string()
+    style(input).bright_green().to_string()
 }
 
 pub fn badge_primary<D: std::fmt::Display>(input: D) -> String {
@@ -133,7 +133,7 @@ pub fn badge_secondary<D: std::fmt::Display>(input: D) -> String {
 }
 
 pub fn bold<D: std::fmt::Display>(input: D) -> String {
-    style(input).white().bright().bold().to_string()
+    style(input).bright_white().bold().to_string()
 }
 
 pub fn dim<D: std::fmt::Display>(input: D) -> String {

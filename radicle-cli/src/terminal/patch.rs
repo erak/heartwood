@@ -16,20 +16,21 @@ pub enum Message {
 impl Message {
     /// Get the `Message` as a string according to the method.
     pub fn get(self, help: &str) -> String {
-        let comment = match self {
-            Message::Edit => term::Editor::new()
-                .require_save(true)
-                .trim_newlines(true)
-                .extension(".markdown")
-                .edit(help)
-                .unwrap(),
-            Message::Blank => None,
-            Message::Text(c) => Some(c),
-        };
-        let comment = comment.unwrap_or_default().replace(help, "");
-        let comment = comment.trim();
+        todo!();
+        // let comment = match self {
+        //     Message::Edit => term::Editor::new()
+        //         .require_save(true)
+        //         .trim_newlines(true)
+        //         .extension(".markdown")
+        //         .edit(help)
+        //         .unwrap(),
+        //     Message::Blank => None,
+        //     Message::Text(c) => Some(c),
+        // };
+        // let comment = comment.unwrap_or_default().replace(help, "");
+        // let comment = comment.trim();
 
-        comment.to_owned()
+        // comment.to_owned()
     }
 
     pub fn append(&mut self, arg: &str) {
