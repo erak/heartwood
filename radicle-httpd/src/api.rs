@@ -1,3 +1,8 @@
+pub mod axum_extra;
+pub mod error;
+#[cfg(test)]
+pub mod test;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,11 +24,7 @@ use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::Profile;
 
 mod auth;
-mod axum_extra;
-mod error;
 mod json;
-#[cfg(test)]
-mod test;
 mod v1;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -63,6 +64,11 @@ impl Context {
             patches,
             id,
         })
+    }
+
+    #[cfg(test)]
+    pub fn profile(&self) -> &Arc<Profile> {
+        &self.profile
     }
 }
 

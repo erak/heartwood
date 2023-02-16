@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::{env, fs};
 
-use axum::body::Body;
+use axum::body::{Body, Bytes};
 use axum::http::{Method, Request};
 use axum::Router;
 use serde_json::Value;
@@ -235,5 +235,9 @@ impl Response {
 
     pub fn status(&self) -> axum::http::StatusCode {
         self.0.status()
+    }
+
+    pub async fn body(self) -> Bytes {
+        hyper::body::to_bytes(self.0.into_body()).await.unwrap()
     }
 }

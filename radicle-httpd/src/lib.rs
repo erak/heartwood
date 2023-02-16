@@ -17,6 +17,7 @@ use tracing::Span;
 
 mod api;
 mod git;
+mod raw;
 
 #[derive(Debug, Clone)]
 pub struct Options {
@@ -37,13 +38,15 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 
     let ctx = api::Context::new(profile.clone());
     let api_router = api::router(ctx);
-    let git_router = git::router(profile);
+    let git_router = git::router(profile.clone());
+    let raw_router = raw::router(profile);
 
     tracing::info!("listening on http://{}", options.listen);
 
     let app = Router::new()
         .merge(git_router)
         .nest("/api", api_router)
+        .nest("/raw", raw_router)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<Body>| {
