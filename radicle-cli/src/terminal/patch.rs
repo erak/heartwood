@@ -1,6 +1,7 @@
 use radicle::git;
 
 use crate::terminal as term;
+use crate::terminal::table::Cell as _;
 
 /// The user supplied `Patch` description.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -99,6 +100,6 @@ pub fn print_title_desc(title: &str, description: &str) {
     term::blank();
     term::print(term::format::dim(format!(
         "╰{}",
-        "─".repeat(term::text_width(title_pretty.to_string().as_str()) - 1)
+        "─".repeat(title_pretty.to_string().width() - 1)
     )));
 }

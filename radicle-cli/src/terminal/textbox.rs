@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::terminal as term;
+use crate::terminal::table::Cell as _;
 
 pub struct TextBox {
     pub body: String,
@@ -32,13 +33,7 @@ impl TextBox {
 
 impl fmt::Display for TextBox {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut width = self
-            .body
-            .lines()
-            .map(console::measure_text_width)
-            .max()
-            .unwrap_or(0)
-            + 2;
+        let mut width = self.body.lines().map(|l| l.width()).max().unwrap_or(0) + 2;
         if let Some(max) = term::width() {
             if width + 2 > max {
                 width = max - 2
@@ -53,11 +48,7 @@ impl fmt::Display for TextBox {
         writeln!(f, "┌{}{}┐", connector, "─".repeat(header_width))?;
 
         for l in self.body.lines() {
-            writeln!(
-                f,
-                "│ {}│",
-                console::pad_str(l, width - 1, console::Alignment::Left, Some("…"))
-            )?;
+            writeln!(f, "│ {}│", l.pad_left(width - 1))?;
         }
 
         let (connector, footer_width) = if !self.last {

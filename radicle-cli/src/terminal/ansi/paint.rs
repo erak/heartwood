@@ -1,13 +1,29 @@
 use std::fmt;
 
+use unicode_width::UnicodeWidthStr;
+
 use super::color::Color;
 use super::style::{Property, Style};
 
 /// A structure encapsulating an item and styling.
 #[derive(Default, Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct Paint<T> {
-    item: T,
-    style: Style,
+    pub item: T,
+    pub style: Style,
+}
+
+impl Paint<&str> {
+    /// Return plain content.
+    pub fn content(&self) -> &str {
+        self.item
+    }
+}
+
+impl Paint<String> {
+    /// Return plain content.
+    pub fn content(&self) -> &str {
+        self.item.as_str()
+    }
 }
 
 impl<T> Paint<T> {
@@ -189,6 +205,16 @@ impl<T> Paint<T> {
     pub fn hidden(mut self) -> Self {
         self.style.properties.set(Property::HIDDEN);
         self
+    }
+}
+
+impl<T: UnicodeWidthStr> UnicodeWidthStr for Paint<T> {
+    fn width<'a>(&'a self) -> usize {
+        self.item.width()
+    }
+
+    fn width_cjk<'a>(&'a self) -> usize {
+        self.item.width_cjk()
     }
 }
 

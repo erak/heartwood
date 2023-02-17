@@ -17,10 +17,111 @@
 use std::fmt::{Display, Write};
 
 use crate::terminal as term;
+use unicode_width::UnicodeWidthStr;
+
+use super::Paint;
 
 #[derive(Debug, Default)]
 pub struct TableOptions {
     pub overflow: bool,
+}
+
+pub trait Cell: Display {
+    type Truncated: Cell;
+    type Padded: Cell;
+
+    fn width(&self) -> usize;
+    fn truncate(&self, width: usize, delim: &str) -> Self::Truncated;
+    fn pad_left(&self, padding: usize) -> Self::Padded;
+}
+
+impl Cell for Paint<String> {
+    type Truncated = Self;
+    type Padded = Self;
+
+    fn width(&self) -> usize {
+        UnicodeWidthStr::width(self.content())
+    }
+
+    fn truncate(&self, width: usize, delim: &str) -> Self {
+        let mut item = self.item.clone();
+        // FIXME: This is not correct when dealing with non-ASCII characters.
+        // We need to account for the fact that we may not be at a char boundary.
+        String::truncate(&mut item, width);
+
+        Self {
+            item,
+            style: self.style,
+        }
+    }
+
+    fn pad_left(&self, padding: usize) -> Self {
+        Self {
+            item: format!("{self:padding$}"),
+            style: self.style,
+        }
+    }
+}
+
+impl Cell for Paint<&str> {
+    type Truncated = Self;
+    type Padded = Paint<String>;
+
+    fn width(&self) -> usize {
+        UnicodeWidthStr::width(self.content())
+    }
+
+    fn truncate(&self, width: usize, delim: &str) -> Self {
+        Self {
+            // FIXME: This is not correct when dealing with non-ASCII characters.
+            // We need to account for the fact that we may not be at a char boundary.
+            item: &self.item[..width],
+            style: self.style,
+        }
+    }
+
+    fn pad_left(&self, padding: usize) -> Paint<String> {
+        Paint {
+            item: format!("{self:padding$}"),
+            style: self.style,
+        }
+    }
+}
+
+impl Cell for String {
+    type Truncated = Self;
+    type Padded = Self;
+
+    fn width(&self) -> usize {
+        UnicodeWidthStr::width(self.as_str())
+    }
+
+    fn truncate(&self, width: usize, delim: &str) -> Self {
+        let mut s = self.clone();
+        String::truncate(&mut s, width);
+        s
+    }
+
+    fn pad_left(&self, padding: usize) -> Self {
+        format!("{self:padding$}")
+    }
+}
+
+impl Cell for str {
+    type Truncated = String;
+    type Padded = String;
+
+    fn width(&self) -> usize {
+        UnicodeWidthStr::width(self)
+    }
+
+    fn truncate(&self, width: usize, delim: &str) -> String {
+        self[..width].to_owned()
+    }
+
+    fn pad_left(&self, padding: usize) -> String {
+        format!("{self:padding$}")
+    }
 }
 
 #[derive(Debug)]
@@ -49,10 +150,11 @@ impl<const W: usize> Table<W> {
         }
     }
 
-    pub fn push(&mut self, row: [impl Display; W]) {
+    pub fn push(&mut self, row: [impl Cell; W]) {
         let row = row.map(|s| s.to_string());
         for (i, cell) in row.iter().enumerate() {
-            self.widths[i] = self.widths[i].max(console::measure_text_width(cell));
+            // match cell.down{}
+            self.widths[i] = self.widths[i].max(cell.width());
         }
         self.rows.push(row);
     }
@@ -68,12 +170,7 @@ impl<const W: usize> Table<W> {
                 if i == cells - 1 || self.opts.overflow {
                     write!(output, "{cell}").ok();
                 } else {
-                    write!(
-                        output,
-                        "{} ",
-                        console::pad_str(cell, self.widths[i], console::Alignment::Left, None)
-                    )
-                    .ok();
+                    write!(output, "{} ", cell.pad_left(self.widths[i]),).ok();
                 }
             }
 
@@ -81,7 +178,7 @@ impl<const W: usize> Table<W> {
             println!(
                 "{}",
                 if let Some(width) = width {
-                    console::truncate_str(output, width - 1, "…")
+                    output.truncate(width - 1, "…")
                 } else {
                     output.into()
                 }
@@ -97,10 +194,7 @@ impl<const W: usize> Table<W> {
                 print!("└── ");
             }
             for (i, cell) in row.iter().enumerate() {
-                print!(
-                    "{} ",
-                    console::pad_str(cell, self.widths[i], console::Alignment::Left, None)
-                );
+                print!("{} ", cell.pad_left(self.widths[i]));
             }
             println!();
         }

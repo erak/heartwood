@@ -5,6 +5,7 @@ use radicle::git;
 use radicle::prelude::*;
 use radicle::profile::Profile;
 use radicle::storage::git::Repository;
+use unicode_width::UnicodeWidthStr;
 
 use crate::terminal as term;
 
@@ -128,7 +129,7 @@ fn print(
             merge.timestamp,
             format!(
                 "{}{} by {} {}",
-                " ".repeat(term::text_width(prefix)),
+                " ".repeat(prefix.width()),
                 term::format::secondary(term::format::dim("✓ merged")),
                 term::format::tertiary(peer.id),
                 badges.join(" "),
@@ -155,7 +156,7 @@ fn print(
             review.timestamp(),
             format!(
                 "{}{} by {} {}",
-                " ".repeat(term::text_width(prefix)),
+                " ".repeat(prefix.width()),
                 verdict,
                 term::format::tertiary(reviewer),
                 badges.join(" "),

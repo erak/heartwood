@@ -20,7 +20,6 @@ pub fn style<T>(item: T) -> Paint<T> {
 
 pub use ansi::{paint, Paint};
 pub use args::{Args, Error, Help};
-pub use console::measure_text_width as text_width;
 pub use inquire::{ui::Styled, Editor};
 pub use io::*;
 pub use spinner::{spinner, Spinner};

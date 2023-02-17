@@ -55,9 +55,7 @@ pub fn tip_args(args: fmt::Arguments) {
 }
 
 pub fn width() -> Option<usize> {
-    console::Term::stdout()
-        .size_checked()
-        .map(|(_, cols)| cols as usize)
+    termion::terminal_size().map(|(cols, _)| cols as usize).ok()
 }
 
 pub fn headline(headline: &str) {

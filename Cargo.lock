@@ -411,7 +411,6 @@ dependencies = [
  "encode_unicode",
  "lazy_static",
  "libc",
- "unicode-width",
  "windows-sys",
 ]
 
@@ -1871,7 +1870,6 @@ dependencies = [
  "anyhow",
  "chrono",
  "concolor",
- "console",
  "indicatif",
  "inquire",
  "json-color",
@@ -1891,6 +1889,7 @@ dependencies = [
  "termion 2.0.1",
  "thiserror",
  "timeago",
+ "unicode-width",
  "ureq",
  "zeroize",
 ]
