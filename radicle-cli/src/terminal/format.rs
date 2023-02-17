@@ -89,15 +89,15 @@ impl<'a> fmt::Display for Identity<'a> {
 }
 
 pub fn negative<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::light_red(msg)
+    Paint::red(msg).bright()
 }
 
 pub fn positive<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::light_green(msg)
+    Paint::green(msg).bright()
 }
 
 pub fn secondary<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::light_blue(msg)
+    Paint::blue(msg).bright()
 }
 
 pub fn tertiary<D: std::fmt::Display>(msg: D) -> Paint<D> {
@@ -113,33 +113,49 @@ pub fn yellow<D: std::fmt::Display>(msg: D) -> Paint<D> {
 }
 
 pub fn highlight<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::light_green(input)
+    Paint::green(input).bright()
 }
 
 pub fn badge_primary<D: std::fmt::Display>(input: D) -> Paint<String> {
-    Paint::magenta(format!(" {input} ")).invert()
+    if Paint::is_enabled() {
+        Paint::magenta(format!(" {input} ")).invert()
+    } else {
+        Paint::new(format!("❲{input}❳"))
+    }
 }
 
 pub fn badge_positive<D: std::fmt::Display>(input: D) -> Paint<String> {
-    Paint::green(format!(" {input} ")).invert()
+    if Paint::is_enabled() {
+        Paint::green(format!(" {input} ")).invert()
+    } else {
+        Paint::new(format!("❲{input}❳"))
+    }
 }
 
 pub fn badge_negative<D: std::fmt::Display>(input: D) -> Paint<String> {
-    Paint::red(format!(" {input} ")).invert()
+    if Paint::is_enabled() {
+        Paint::red(format!(" {input} ")).invert()
+    } else {
+        Paint::new(format!("❲{input}❳"))
+    }
 }
 
 pub fn badge_secondary<D: std::fmt::Display>(input: D) -> Paint<String> {
-    Paint::blue(format!(" {input} ")).invert()
+    if Paint::is_enabled() {
+        Paint::blue(format!(" {input} ")).invert()
+    } else {
+        Paint::new(format!("❲{input}❳"))
+    }
 }
 
 pub fn bold<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::light_white(input).bold()
+    Paint::white(input).bold().bright()
 }
 
 pub fn dim<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::new(input).dimmed()
+    Paint::new(input).dim()
 }
 
 pub fn italic<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::new(input).italic().dimmed()
+    Paint::new(input).italic().dim()
 }

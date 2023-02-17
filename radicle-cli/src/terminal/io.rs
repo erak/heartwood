@@ -2,7 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use inquire::ui::{ErrorMessageRenderConfig, StyleSheet, Styled};
-use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select, Text};
+use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select};
 
 use radicle::cob::issue::Issue;
 use radicle::cob::thread::CommentId;
@@ -73,7 +73,7 @@ pub fn header(header: &str) {
 }
 
 pub fn blob(text: impl fmt::Display) {
-    println!("{}", style(text.to_string().trim()).dimmed());
+    println!("{}", style(text.to_string().trim()).dim());
 }
 
 pub fn blank() {
@@ -99,7 +99,7 @@ pub fn usage(name: &str, usage: &str) {
         "{} {}\n{}",
         Paint::red("×"),
         Paint::red(format!("Error: rad-{name}: invalid usage")),
-        Paint::red(prefixed(TAB, usage)).dimmed()
+        Paint::red(prefixed(TAB, usage)).dim()
     );
 }
 
@@ -112,7 +112,7 @@ pub fn indented(msg: impl fmt::Display) {
 }
 
 pub fn subcommand(msg: impl fmt::Display) {
-    println!("{} {}", style("$").dimmed(), style(msg).dimmed());
+    println!("{} {}", style("$").dim(), style(msg).dim());
 }
 
 pub fn warning(warning: &str) {
@@ -418,7 +418,7 @@ pub mod proposal {
         identity::Identity,
     };
 
-    use super::{super::format, theme};
+    use super::super::format;
 
     pub fn revision_select(
         proposal: &Proposal,

@@ -1,7 +1,6 @@
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 
 use crate::terminal as term;
-use crate::terminal::style;
 use crate::terminal::Paint;
 
 pub struct Spinner {

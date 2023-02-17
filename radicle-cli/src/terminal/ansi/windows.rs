@@ -62,12 +62,3 @@ mod windows_console {
         unsafe { enable_ansi_colors_raw().unwrap_or(false) }
     }
 }
-
-#[cfg(not(windows))]
-mod windows_console {
-    pub fn enable_ansi_colors() -> bool {
-        true
-    }
-}
-
-pub use self::windows_console::enable_ansi_colors;

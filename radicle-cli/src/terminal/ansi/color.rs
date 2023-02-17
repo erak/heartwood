@@ -7,61 +7,40 @@ use super::{Paint, Style};
 pub enum Color {
     /// No color has been set. Nothing is changed when applied.
     Unset,
-
-    /// Terminal default #9. (foreground code `39`, background code `49`).
-    Default,
-
     /// Black #0 (foreground code `30`, background code `40`).
     Black,
-
     /// Red: #1 (foreground code `31`, background code `41`).
     Red,
-
     /// Green: #2 (foreground code `32`, background code `42`).
     Green,
-
     /// Yellow: #3 (foreground code `33`, background code `43`).
     Yellow,
-
     /// Blue: #4 (foreground code `34`, background code `44`).
     Blue,
-
     /// Magenta: #5 (foreground code `35`, background code `45`).
     Magenta,
-
     /// Cyan: #6 (foreground code `36`, background code `46`).
     Cyan,
-
     /// White: #7 (foreground code `37`, background code `47`).
     White,
-
     /// High-intensity black: #8.
     LightBlack,
-
     /// High-intensity red: #9.
     LightRed,
-
     /// High-intensity green: #10.
     LightGreen,
-
     /// High-intensity yellow: #11.
     LightYellow,
-
     /// High-intensity blue: #12.
     LightBlue,
-
     /// High-intensity magenta: #13.
     LightMagenta,
-
     /// High-intensity cyan: #14.
     LightCyan,
-
     /// High-intensity white: #15.
     LightWhite,
-
     /// A color number from 0 to 255, for use in 256-color terminals.
     Fixed(u8),
-
     /// A 24-bit RGB color, as specified by ISO-8613-3.
     RGB(u8, u8, u8),
 }
@@ -69,12 +48,6 @@ pub enum Color {
 impl Color {
     /// Constructs a new `Paint` structure that encapsulates `item` with the
     /// foreground color set to the color `self`.
-    ///
-    /// ```rust
-    /// use yansi::Color::Blue;
-    ///
-    /// println!("This is going to be blue: {}", Blue.paint("yay!"));
-    /// ```
     #[inline]
     pub fn paint<T>(self, item: T) -> Paint<T> {
         Paint::new(item).fg(self)
@@ -82,13 +55,6 @@ impl Color {
 
     /// Constructs a new `Style` structure with the foreground color set to the
     /// color `self`.
-    ///
-    /// ```rust
-    /// use yansi::Color::Green;
-    ///
-    /// let success = Green.style().bold();
-    /// println!("Hey! {}", success.paint("Success!"));
-    /// ```
     #[inline]
     pub const fn style(self) -> Style {
         Style::new(self)
@@ -97,7 +63,6 @@ impl Color {
     pub(crate) fn ansi_fmt(&self, f: &mut dyn fmt::Write) -> fmt::Result {
         match *self {
             Color::Unset => Ok(()),
-            Color::Default => write!(f, "9"),
             Color::Black => write!(f, "0"),
             Color::Red => write!(f, "1"),
             Color::Green => write!(f, "2"),

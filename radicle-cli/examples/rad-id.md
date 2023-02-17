@@ -14,10 +14,10 @@ Let's add Bob as a delegate using their DID
 
 ```
 $ rad id edit --title "Add Bob" --description "Add Bob as a delegate" --delegates did:key:z6MkedTZGJGqgQ2py2b8kGecfxdt2yRdHWF6JpaZC47fovFn --no-confirm
-ok Identity proposal '06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39' created 🌱
+✓ Identity proposal '06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39' created 🌱
 title: Add Bob
 description: Add Bob as a delegate
-status:  open 
+status: ❲open❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -90,10 +90,10 @@ Let's see what happens when we reject the change:
 
 ```
 $ rad id reject 06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39 --rev z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi/1 --no-confirm
-ok Rejected proposal ✗
+✓ Rejected proposal ✗
 title: Add Bob
 description: Add Bob as a delegate
-status:  open 
+status: ❲open❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -146,10 +146,10 @@ Instead, let's accept the proposal:
 
 ```
 $ rad id accept 06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39 --rev z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi/1 --no-confirm
-ok Accepted proposal ✓
+✓ Accepted proposal ✓
 title: Add Bob
 description: Add Bob as a delegate
-status:  open 
+status: ❲open❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -208,10 +208,10 @@ At this point, we can commit the proposal and update the identity:
 
 ```
 $ rad id commit 06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39 --rev z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi/1 --no-confirm
-ok Committed new identity 'c96e764965aaeff1c6ea3e5b97e2b9828773c8b0' 🌱
+✓ Committed new identity 'c96e764965aaeff1c6ea3e5b97e2b9828773c8b0' 🌱
 title: Add Bob
 description: Add Bob as a delegate
-status:  committed 
+status: ❲committed❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -255,10 +255,10 @@ the `--threshold` option:
 
 ```
 $ rad id edit --title "Update threshold" --description "Update to safer threshold" --threshold 2 --no-confirm
-ok Identity proposal 'dc00640d3152ea5f1df59f39f2f5983d2ad21810' created 🌱
+✓ Identity proposal 'dc00640d3152ea5f1df59f39f2f5983d2ad21810' created 🌱
 title: Update threshold
 description: Update to safer threshold
-status:  open 
+status: ❲open❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -299,10 +299,10 @@ But we change our minds and decide to close the proposal instead:
 
 ```
 $ rad id close dc00640d3152ea5f1df59f39f2f5983d2ad21810 --no-confirm
-ok Closed identity proposal 'dc00640d3152ea5f1df59f39f2f5983d2ad21810'
+✓ Closed identity proposal 'dc00640d3152ea5f1df59f39f2f5983d2ad21810'
 title: Update threshold
 description: Update to safer threshold
-status:  closed 
+status: ❲closed❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
@@ -348,8 +348,8 @@ Radicle identity, then we can use the list command:
 
 ```
 $ rad id list
-06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39 "Add Bob"           committed
-dc00640d3152ea5f1df59f39f2f5983d2ad21810 "Update threshold"  closed
+06d9efa2a9aad06bfdf25a25690e1ec7db2c3c39 "Add Bob"          ❲committed❳
+dc00640d3152ea5f1df59f39f2f5983d2ad21810 "Update threshold" ❲closed❳
 ```
 
 And if we want to view the latest state of any proposal we can use the
@@ -359,7 +359,7 @@ show command:
 $ rad id show dc00640d3152ea5f1df59f39f2f5983d2ad21810
 title: Update threshold
 description: Update to safer threshold
-status:  closed 
+status: ❲closed❳
 author: did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi
 
 Document Diff
