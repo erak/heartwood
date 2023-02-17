@@ -1,6 +1,6 @@
 use std::{fmt, time};
 
-pub use crate::terminal::styling::style;
+pub use crate::terminal::{style, Paint};
 
 use radicle::cob::{ObjectId, Timestamp};
 use radicle::node::NodeId;
@@ -88,58 +88,58 @@ impl<'a> fmt::Display for Identity<'a> {
     }
 }
 
-pub fn negative<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).bright_red().to_string()
+pub fn negative<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::light_red(msg)
 }
 
-pub fn positive<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).bright_green().to_string()
+pub fn positive<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::light_green(msg)
 }
 
-pub fn secondary<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).bright_blue().to_string()
+pub fn secondary<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::light_blue(msg)
 }
 
-pub fn tertiary<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).cyan().to_string()
+pub fn tertiary<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::cyan(msg)
 }
 
-pub fn tertiary_bold<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).cyan().bold().to_string()
+pub fn tertiary_bold<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::cyan(msg).bold()
 }
 
-pub fn yellow<D: std::fmt::Display>(msg: D) -> String {
-    style(msg).yellow().to_string()
+pub fn yellow<D: std::fmt::Display>(msg: D) -> Paint<D> {
+    Paint::yellow(msg)
 }
 
-pub fn highlight<D: std::fmt::Display>(input: D) -> String {
-    style(input).bright_green().to_string()
+pub fn highlight<D: std::fmt::Display>(input: D) -> Paint<D> {
+    Paint::light_green(input)
 }
 
-pub fn badge_primary<D: std::fmt::Display>(input: D) -> String {
-    style(format!(" {input} ")).magenta().reverse().to_string()
+pub fn badge_primary<D: std::fmt::Display>(input: D) -> Paint<String> {
+    Paint::magenta(format!(" {input} ")).invert()
 }
 
-pub fn badge_positive<D: std::fmt::Display>(input: D) -> String {
-    style(format!(" {input} ")).green().reverse().to_string()
+pub fn badge_positive<D: std::fmt::Display>(input: D) -> Paint<String> {
+    Paint::green(format!(" {input} ")).invert()
 }
 
-pub fn badge_negative<D: std::fmt::Display>(input: D) -> String {
-    style(format!(" {input} ")).red().reverse().to_string()
+pub fn badge_negative<D: std::fmt::Display>(input: D) -> Paint<String> {
+    Paint::red(format!(" {input} ")).invert()
 }
 
-pub fn badge_secondary<D: std::fmt::Display>(input: D) -> String {
-    style(format!(" {input} ")).blue().reverse().to_string()
+pub fn badge_secondary<D: std::fmt::Display>(input: D) -> Paint<String> {
+    Paint::blue(format!(" {input} ")).invert()
 }
 
-pub fn bold<D: std::fmt::Display>(input: D) -> String {
-    style(input).bright_white().bold().to_string()
+pub fn bold<D: std::fmt::Display>(input: D) -> Paint<D> {
+    Paint::light_white(input).bold()
 }
 
-pub fn dim<D: std::fmt::Display>(input: D) -> String {
-    style(input).dim().to_string()
+pub fn dim<D: std::fmt::Display>(input: D) -> Paint<D> {
+    Paint::new(input).dimmed()
 }
 
-pub fn italic<D: std::fmt::Display>(input: D) -> String {
-    style(input).italic().dim().to_string()
+pub fn italic<D: std::fmt::Display>(input: D) -> Paint<D> {
+    Paint::new(input).italic().dimmed()
 }

@@ -94,11 +94,9 @@ fn print(
     )];
 
     if you {
-        author_info.push(term::format::secondary("(you)"));
+        author_info.push(term::format::secondary("(you)").to_string());
     }
-    author_info.push(term::format::dim(term::format::timestamp(
-        &patch.timestamp(),
-    )));
+    author_info.push(term::format::dim(term::format::timestamp(&patch.timestamp())).to_string());
 
     let (_, revision) = patch
         .latest()
@@ -120,10 +118,10 @@ fn print(
         let mut badges = Vec::new();
 
         if peer.delegate {
-            badges.push(term::format::secondary("(delegate)"));
+            badges.push(term::format::secondary("(delegate)").to_string());
         }
         if peer.id == *whoami {
-            badges.push(term::format::secondary("(you)"));
+            badges.push(term::format::secondary("(you)").to_string());
         }
 
         timeline.push((
@@ -147,10 +145,10 @@ fn print(
         let mut badges = Vec::new();
 
         if peer.delegate {
-            badges.push(term::format::secondary("(delegate)"));
+            badges.push(term::format::secondary("(delegate)").to_string());
         }
         if peer.id == *whoami {
-            badges.push(term::format::secondary("(you)"));
+            badges.push(term::format::secondary("(you)").to_string());
         }
 
         timeline.push((

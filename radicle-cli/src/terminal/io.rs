@@ -16,8 +16,8 @@ use radicle_crypto::ssh::keystore::MemorySigner;
 use super::command;
 use super::format;
 use super::spinner::spinner;
-use super::style;
 use super::Error;
+use super::{style, Paint};
 
 pub const TAB: &str = "    ";
 
@@ -47,7 +47,7 @@ pub use success;
 pub use tip;
 
 pub fn success_args(args: fmt::Arguments) {
-    println!("{} {args}", style("✓").green());
+    println!("{} {args}", Paint::green("✓"));
 }
 
 pub fn tip_args(args: fmt::Arguments) {
@@ -73,7 +73,7 @@ pub fn header(header: &str) {
 }
 
 pub fn blob(text: impl fmt::Display) {
-    println!("{}", style(text.to_string().trim()).dim());
+    println!("{}", style(text.to_string().trim()).dimmed());
 }
 
 pub fn blank() {
@@ -97,9 +97,9 @@ pub fn help(name: &str, version: &str, description: &str, usage: &str) {
 pub fn usage(name: &str, usage: &str) {
     println!(
         "{} {}\n{}",
-        style("×").red(),
-        style(format!("Error: rad-{name}: invalid usage")).red(),
-        style(prefixed(TAB, usage)).red().dim()
+        Paint::red("×"),
+        Paint::red(format!("Error: rad-{name}: invalid usage")),
+        Paint::red(prefixed(TAB, usage)).dimmed()
     );
 }
 
@@ -112,19 +112,19 @@ pub fn indented(msg: impl fmt::Display) {
 }
 
 pub fn subcommand(msg: impl fmt::Display) {
-    println!("{} {}", style("$").dim(), style(msg).dim());
+    println!("{} {}", style("$").dimmed(), style(msg).dimmed());
 }
 
 pub fn warning(warning: &str) {
     println!(
         "{} {} {warning}",
-        style("!").yellow(),
-        style("Warning:").yellow().bold(),
+        Paint::yellow("!"),
+        Paint::yellow("Warning:").bold(),
     );
 }
 
 pub fn error(error: impl fmt::Display) {
-    println!("{} {error}", style("×").red());
+    println!("{} {error}", Paint::red("×"));
 }
 
 pub fn fail(header: &str, error: &anyhow::Error) {
@@ -134,19 +134,19 @@ pub fn fail(header: &str, error: &anyhow::Error) {
 
     println!(
         "{} {}{}{error}",
-        style("×").red(),
-        style(header).red().bold(),
-        style(separator).red(),
+        Paint::red("×"),
+        Paint::red(header).bold(),
+        Paint::red(separator),
     );
 
     if let Some(Error::WithHint { hint, .. }) = error.downcast_ref::<Error>() {
-        println!("{} {}", style("×").yellow(), style(hint).yellow());
+        println!("{} {}", Paint::yellow("×"), Paint::yellow(hint));
         blank();
     }
 }
 
 pub fn ask<D: fmt::Display>(prompt: D, default: bool) -> bool {
-    let prompt = format!("{} {}", style("☞".to_owned()).white(), prompt);
+    let prompt = format!("{} {}", Paint::white("☞".to_owned()), prompt);
 
     Confirm::new(&prompt)
         .with_default(true)

@@ -14,7 +14,7 @@
 //! // spider mite persimilis
 //! ```
 
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 
 use crate::terminal as term;
 
@@ -49,7 +49,7 @@ impl<const W: usize> Table<W> {
         }
     }
 
-    pub fn push(&mut self, row: [impl ToString; W]) {
+    pub fn push(&mut self, row: [impl Display; W]) {
         let row = row.map(|s| s.to_string());
         for (i, cell) in row.iter().enumerate() {
             self.widths[i] = self.widths[i].max(console::measure_text_width(cell));

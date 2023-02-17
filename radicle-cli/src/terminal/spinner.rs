@@ -1,7 +1,8 @@
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 
 use crate::terminal as term;
-use crate::terminal::styling::style;
+use crate::terminal::style;
+use crate::terminal::Paint;
 
 pub struct Spinner {
     progress: ProgressBar,
@@ -52,7 +53,7 @@ impl Spinner {
 
     pub fn set_failed(&mut self) {
         self.progress.finish_and_clear();
-        term::println(style("×").red(), &self.message);
+        term::println(Paint::red("×"), &self.message);
     }
 }
 
@@ -60,10 +61,10 @@ pub fn spinner(message: impl ToString) -> Spinner {
     let message = message.to_string();
     let style = ProgressStyle::default_spinner()
         .tick_strings(&[
-            &style("\\ ").yellow().to_string(),
-            &style("| ").yellow().to_string(),
-            &style("/ ").yellow().to_string(),
-            &style("| ").yellow().to_string(),
+            &Paint::yellow("\\ ").to_string(),
+            &Paint::yellow("| ").to_string(),
+            &Paint::yellow("/ ").to_string(),
+            &Paint::yellow("| ").to_string(),
         ])
         .template("{spinner} {msg}")
         .on_finish(ProgressFinish::AndClear);

@@ -162,9 +162,9 @@ pub fn init(options: Options, profile: &profile::Profile) -> anyhow::Result<()> 
     term::headline(&format!(
         "Initializing local 🌱 project in {}",
         if path == cwd {
-            term::format::highlight(".")
+            term::format::highlight(".").to_string()
         } else {
-            term::format::highlight(path.display())
+            term::format::highlight(path.display()).to_string()
         }
     ));
 

@@ -1,3 +1,4 @@
+pub mod ansi;
 pub mod args;
 pub mod cob;
 pub mod command;
@@ -13,6 +14,11 @@ use std::process;
 
 use radicle::profile::Profile;
 
+pub fn style<T>(item: T) -> Paint<T> {
+    paint(item)
+}
+
+pub use ansi::{paint, Paint};
 pub use args::{Args, Error, Help};
 pub use console::measure_text_width as text_width;
 pub use inquire::{ui::Styled, Editor};
@@ -20,174 +26,6 @@ pub use io::*;
 pub use spinner::{spinner, Spinner};
 pub use table::Table;
 pub use textbox::TextBox;
-
-mod styling {
-    use std::collections::HashSet;
-    use std::fmt::Display;
-
-    use termion::color;
-    use termion::style;
-
-    #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-    pub enum Style {
-        White,
-        Red,
-        Green,
-        Cyan,
-        Blue,
-        Magenta,
-        Yellow,
-        Bold,
-        Underline,
-        Italic,
-        Reverse,
-        Dim,
-        BrightRed,
-        BrightBlue,
-        BrightGreen,
-        BrightWhite,
-    }
-
-    impl Display for Style {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            use termion::color::Fg;
-
-            match self {
-                Self::Red => write!(f, "{}", Fg(color::Red)),
-                Self::Green => write!(f, "{}", Fg(color::Green)),
-                Self::BrightGreen => write!(f, "{}", Fg(color::LightGreen)),
-                Self::Dim => write!(f, "{}", style::Faint),
-                Self::Bold => write!(f, "{}", style::Bold),
-                Self::Yellow => write!(f, "{}", Fg(color::Yellow)),
-                Self::Blue => write!(f, "{}", Fg(color::Blue)),
-                Self::Cyan => write!(f, "{}", Fg(color::Cyan)),
-                Self::BrightBlue => write!(f, "{}", Fg(color::LightBlue)),
-                Self::Italic => write!(f, "{}", style::Italic),
-                x => todo!("{:?}", x),
-            }
-        }
-    }
-
-    pub struct Token<T> {
-        content: T,
-        styles: HashSet<Style>,
-    }
-
-    impl<T: Display> Display for Token<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let mut reset_style = false;
-            let mut reset_color = false;
-
-            for style in &self.styles {
-                if matches!(style, Style::Italic | Style::Bold | Style::Dim) {
-                    reset_style = true;
-                } else {
-                    reset_color = true;
-                }
-                write!(f, "{style}")?;
-            }
-            write!(f, "{}", self.content)?;
-
-            if reset_style {
-                write!(f, "{}", style::Reset)?;
-            }
-            if reset_color {
-                write!(f, "{}", color::Fg(color::Reset))?;
-            }
-            Ok(())
-        }
-    }
-
-    impl<T> Token<T> {
-        pub fn red(&mut self) -> &mut Self {
-            self.styles.insert(Style::Red);
-            self
-        }
-
-        pub fn yellow(&mut self) -> &mut Self {
-            self.styles.insert(Style::Yellow);
-            self
-        }
-
-        pub fn bold(&mut self) -> &mut Self {
-            self.styles.insert(Style::Bold);
-            self
-        }
-
-        pub fn underline(&mut self) -> &mut Self {
-            self.styles.insert(Style::Underline);
-            self
-        }
-
-        pub fn reverse(&mut self) -> &mut Self {
-            self.styles.insert(Style::Reverse);
-            self
-        }
-
-        pub fn italic(&mut self) -> &mut Self {
-            self.styles.insert(Style::Italic);
-            self
-        }
-
-        pub fn white(&mut self) -> &mut Self {
-            self.styles.insert(Style::White);
-            self
-        }
-
-        pub fn dim(&mut self) -> &mut Self {
-            self.styles.insert(Style::Dim);
-            self
-        }
-
-        pub fn blue(&mut self) -> &mut Self {
-            self.styles.insert(Style::Blue);
-            self
-        }
-
-        pub fn cyan(&mut self) -> &mut Self {
-            self.styles.insert(Style::Cyan);
-            self
-        }
-
-        pub fn green(&mut self) -> &mut Self {
-            self.styles.insert(Style::Green);
-            self
-        }
-
-        pub fn bright_green(&mut self) -> &mut Self {
-            self.styles.insert(Style::BrightGreen);
-            self
-        }
-
-        pub fn bright_blue(&mut self) -> &mut Self {
-            self.styles.insert(Style::BrightBlue);
-            self
-        }
-
-        pub fn bright_red(&mut self) -> &mut Self {
-            self.styles.insert(Style::BrightRed);
-            self
-        }
-
-        pub fn bright_white(&mut self) -> &mut Self {
-            self.styles.insert(Style::BrightWhite);
-            self
-        }
-
-        pub fn magenta(&mut self) -> &mut Self {
-            self.styles.insert(Style::Magenta);
-            self
-        }
-    }
-
-    pub fn style<T: Display>(content: T) -> Token<T> {
-        Token {
-            content,
-            styles: HashSet::new(),
-        }
-    }
-}
-use styling::*;
 
 /// Context passed to all commands.
 pub trait Context {
@@ -264,14 +102,14 @@ where
             };
             eprintln!(
                 "{} {} {} {}",
-                style("==").red(),
-                style("Error:").red(),
-                style(format!("rad-{}:", help.name)).red(),
-                style(err.to_string()).red(),
+                Paint::red("=="),
+                Paint::red("Error:"),
+                Paint::red(format!("rad-{}:", help.name)),
+                Paint::red(err.to_string()),
             );
 
             if let Some(Error::WithHint { hint, .. }) = err.downcast_ref::<Error>() {
-                eprintln!("{}", style(hint).yellow());
+                eprintln!("{}", Paint::yellow(hint));
             }
 
             process::exit(1);

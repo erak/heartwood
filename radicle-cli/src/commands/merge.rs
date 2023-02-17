@@ -219,11 +219,10 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
 
     let merge_style_pretty = match merge_style {
         MergeStyle::FastForward => term::format::style(merge_style.to_string())
-            .dim()
+            .dimmed()
             .italic()
             .to_string(),
-        MergeStyle::Commit => term::format::style(merge_style.to_string())
-            .yellow()
+        MergeStyle::Commit => term::format::yellow(merge_style.to_string())
             .italic()
             .to_string(),
     };
