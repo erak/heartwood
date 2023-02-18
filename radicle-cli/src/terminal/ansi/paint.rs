@@ -6,7 +6,7 @@ use super::color::Color;
 use super::style::{Property, Style};
 
 /// A structure encapsulating an item and styling.
-#[derive(Default, Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
+#[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct Paint<T> {
     pub item: T,
     pub style: Style,
@@ -143,23 +143,6 @@ impl<T> Paint<T> {
         self
     }
 
-    pub fn bright(mut self) -> Paint<T> {
-        self.style.foreground = match self.style.foreground {
-            Color::Unset => Color::Unset,
-            Color::Red => Color::LightRed,
-            Color::Blue => Color::LightBlue,
-            Color::Cyan => Color::LightCyan,
-            Color::Green => Color::LightGreen,
-            Color::Magenta => Color::LightMagenta,
-            Color::White => Color::LightWhite,
-            Color::Black => Color::LightBlack,
-            Color::Yellow => Color::LightYellow,
-
-            other => other,
-        };
-        self
-    }
-
     /// Sets the background to `color`.
     #[inline]
     pub fn bg(mut self, color: Color) -> Paint<T> {
@@ -209,42 +192,35 @@ impl<T> Paint<T> {
 }
 
 impl<T: UnicodeWidthStr> UnicodeWidthStr for Paint<T> {
-    fn width<'a>(&'a self) -> usize {
+    fn width(&self) -> usize {
         self.item.width()
     }
 
-    fn width_cjk<'a>(&'a self) -> usize {
+    fn width_cjk(&self) -> usize {
         self.item.width_cjk()
     }
 }
 
-macro_rules! impl_fmt_trait {
-    ($trait:ident, $fmt:expr) => {
-        impl<T: fmt::$trait> fmt::$trait for Paint<T> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                if Paint::is_enabled() && self.style.wrap {
-                    let mut prefix = String::new();
-                    prefix.push_str("\x1B[0m");
-                    self.style.fmt_prefix(&mut prefix)?;
-                    self.style.fmt_prefix(f)?;
+impl<T: fmt::Display> fmt::Display for Paint<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if Paint::is_enabled() && self.style.wrap {
+            let mut prefix = String::new();
+            prefix.push_str("\x1B[0m");
+            self.style.fmt_prefix(&mut prefix)?;
+            self.style.fmt_prefix(f)?;
 
-                    let item = format!($fmt, self.item).replace("\x1B[0m", &prefix);
-                    fmt::$trait::fmt(&item, f)?;
-                    self.style.fmt_suffix(f)
-                } else if Paint::is_enabled() {
-                    self.style.fmt_prefix(f)?;
-                    fmt::$trait::fmt(&self.item, f)?;
-                    self.style.fmt_suffix(f)
-                } else {
-                    fmt::$trait::fmt(&self.item, f)
-                }
-            }
+            let item = format!("{}", self.item).replace("\x1B[0m", &prefix);
+            fmt::Display::fmt(&item, f)?;
+            self.style.fmt_suffix(f)
+        } else if Paint::is_enabled() {
+            self.style.fmt_prefix(f)?;
+            fmt::Display::fmt(&self.item, f)?;
+            self.style.fmt_suffix(f)
+        } else {
+            fmt::Display::fmt(&self.item, f)
         }
-    };
+    }
 }
-
-impl_fmt_trait!(Display, "{}");
-impl_fmt_trait!(Debug, "{:?}");
 
 impl Paint<()> {
     /// Returns `true` if coloring is enabled and `false` otherwise.

@@ -89,15 +89,15 @@ impl<'a> fmt::Display for Identity<'a> {
 }
 
 pub fn negative<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::red(msg).bright()
+    Paint::red(msg).bold()
 }
 
 pub fn positive<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::green(msg).bright()
+    Paint::green(msg).bold()
 }
 
 pub fn secondary<D: std::fmt::Display>(msg: D) -> Paint<D> {
-    Paint::blue(msg).bright()
+    Paint::blue(msg).bold()
 }
 
 pub fn tertiary<D: std::fmt::Display>(msg: D) -> Paint<D> {
@@ -112,8 +112,8 @@ pub fn yellow<D: std::fmt::Display>(msg: D) -> Paint<D> {
     Paint::yellow(msg)
 }
 
-pub fn highlight<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::green(input).bright()
+pub fn highlight<D: std::fmt::Debug + std::fmt::Display>(input: D) -> Paint<D> {
+    Paint::green(input).bold()
 }
 
 pub fn badge_primary<D: std::fmt::Display>(input: D) -> Paint<String> {
@@ -149,7 +149,7 @@ pub fn badge_secondary<D: std::fmt::Display>(input: D) -> Paint<String> {
 }
 
 pub fn bold<D: std::fmt::Display>(input: D) -> Paint<D> {
-    Paint::white(input).bold().bright()
+    Paint::white(input).bold()
 }
 
 pub fn dim<D: std::fmt::Display>(input: D) -> Paint<D> {

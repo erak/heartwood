@@ -23,22 +23,6 @@ pub enum Color {
     Cyan,
     /// White: #7 (foreground code `37`, background code `47`).
     White,
-    /// High-intensity black: #8.
-    LightBlack,
-    /// High-intensity red: #9.
-    LightRed,
-    /// High-intensity green: #10.
-    LightGreen,
-    /// High-intensity yellow: #11.
-    LightYellow,
-    /// High-intensity blue: #12.
-    LightBlue,
-    /// High-intensity magenta: #13.
-    LightMagenta,
-    /// High-intensity cyan: #14.
-    LightCyan,
-    /// High-intensity white: #15.
-    LightWhite,
     /// A color number from 0 to 255, for use in 256-color terminals.
     Fixed(u8),
     /// A 24-bit RGB color, as specified by ISO-8613-3.
@@ -71,14 +55,6 @@ impl Color {
             Color::Magenta => write!(f, "5"),
             Color::Cyan => write!(f, "6"),
             Color::White => write!(f, "7"),
-            Color::LightBlack => write!(f, "8"),
-            Color::LightRed => write!(f, "9"),
-            Color::LightGreen => write!(f, "10"),
-            Color::LightYellow => write!(f, "11"),
-            Color::LightBlue => write!(f, "12"),
-            Color::LightMagenta => write!(f, "13"),
-            Color::LightCyan => write!(f, "14"),
-            Color::LightWhite => write!(f, "15"),
             Color::Fixed(num) => write!(f, "8;5;{num}"),
             Color::RGB(r, g, b) => write!(f, "8;2;{r};{g};{b}"),
         }
