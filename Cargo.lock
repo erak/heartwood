@@ -2106,6 +2106,7 @@ dependencies = [
  "anyhow",
  "git-ref-format",
  "radicle",
+ "radicle-cli",
 ]
 
 [[package]]

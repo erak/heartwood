@@ -1,18 +1,16 @@
 use std::fmt;
-use std::str::FromStr;
 
 use inquire::ui::{ErrorMessageRenderConfig, StyleSheet, Styled};
+use inquire::InquireError;
 use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select};
 use once_cell::sync::Lazy;
 
 use radicle::cob::issue::Issue;
 use radicle::cob::thread::{Comment, CommentId};
-use radicle::crypto::ssh::keystore::Passphrase;
+use radicle::crypto::ssh::keystore::{MemorySigner, Passphrase};
 use radicle::crypto::Signer;
 use radicle::profile;
 use radicle::profile::Profile;
-
-use radicle_crypto::ssh::keystore::MemorySigner;
 
 use super::command;
 use super::format;
@@ -28,6 +26,8 @@ pub static CONFIG: Lazy<RenderConfig> = Lazy::new(|| RenderConfig {
     prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
     answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
     answer: StyleSheet::new(),
+    highlighted_option_prefix: Styled::new("*").with_fg(Color::LightYellow),
+    help_message: StyleSheet::new().with_fg(Color::DarkGrey),
     error_message: ErrorMessageRenderConfig::default_colored()
         .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
     ..RenderConfig::default_colored()
@@ -199,49 +199,6 @@ where
     Ok(value)
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct Optional<T> {
-    option: Option<T>,
-}
-
-impl<T: fmt::Display> fmt::Display for Optional<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(val) = &self.option {
-            write!(f, "{val}")
-        } else {
-            write!(f, "")
-        }
-    }
-}
-
-impl<T: FromStr> FromStr for Optional<T> {
-    type Err = <T as FromStr>::Err;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            return Ok(Optional { option: None });
-        }
-        let val: T = s.parse()?;
-
-        Ok(Self { option: Some(val) })
-    }
-}
-
-pub fn input_optional<S, E>(message: &str, initial: Option<S>) -> anyhow::Result<Option<S>>
-where
-    S: fmt::Display + fmt::Debug + FromStr<Err = E> + Clone,
-    E: fmt::Debug + fmt::Display,
-{
-    let input = CustomType::<Optional<S>>::new(message).with_render_config(*CONFIG);
-    let value = if let Some(init) = initial {
-        input.with_default(Optional { option: Some(init) }).prompt()
-    } else {
-        input.prompt()
-    }?;
-
-    Ok(value.option)
-}
-
 pub fn passphrase() -> Result<Passphrase, anyhow::Error> {
     if let Some(p) = profile::env::passphrase() {
         Ok(p)
@@ -278,26 +235,11 @@ pub fn passphrase_stdin() -> Result<Passphrase, anyhow::Error> {
     Ok(Passphrase::from(input.trim_end().to_owned()))
 }
 
-pub fn select<'a, T>(options: &'a [T], active: &'a T) -> Option<&'a T>
-where
-    T: fmt::Display + Eq + PartialEq + Clone,
-{
-    let active = options.iter().position(|o| o == active);
-    let selection = Select::new("", options.iter().collect::<Vec<_>>()).with_render_config(*CONFIG);
-
-    let result = if let Some(active) = active {
-        selection
-            .with_starting_cursor(active)
-            .prompt_skippable()
-            .unwrap()
-    } else {
-        selection.prompt_skippable().unwrap()
-    };
-
-    result
-}
-
-pub fn select_with_prompt<'a, T>(prompt: &str, options: &'a [T], active: &'a T) -> Option<&'a T>
+pub fn select<'a, T>(
+    prompt: &str,
+    options: &'a [T],
+    active: &'a T,
+) -> Result<Option<&'a T>, InquireError>
 where
     T: fmt::Display + Eq + PartialEq,
 {
@@ -305,14 +247,11 @@ where
     let selection =
         Select::new(prompt, options.iter().collect::<Vec<_>>()).with_render_config(*CONFIG);
 
-    let result = if let Some(active) = active {
+    if let Some(active) = active {
         selection.with_starting_cursor(active).prompt_skippable()
     } else {
         selection.prompt_skippable()
     }
-    .unwrap();
-
-    result
 }
 
 pub fn comment_select(issue: &Issue) -> Option<(&CommentId, &Comment)> {
@@ -335,21 +274,17 @@ pub fn markdown(content: &str) {
     }
 }
 
-fn _info(args: std::fmt::Arguments) {
-    println!("{args}");
-}
-
 pub mod proposal {
     use std::fmt::Write as _;
 
-    use super::*;
     use radicle::{
         cob::identity::{self, Proposal},
         git::Oid,
         identity::Identity,
     };
 
-    use super::super::format;
+    use super::*;
+    use crate::terminal::format;
 
     pub fn revision_select(
         proposal: &Proposal,
