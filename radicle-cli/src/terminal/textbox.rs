@@ -34,7 +34,7 @@ impl TextBox {
 impl fmt::Display for TextBox {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut width = self.body.lines().map(|l| l.width()).max().unwrap_or(0) + 2;
-        if let Some(max) = term::width() {
+        if let Some(max) = term::columns() {
             if width + 2 > max {
                 width = max - 2
             }

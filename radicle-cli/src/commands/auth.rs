@@ -80,7 +80,11 @@ pub fn init(options: Options) -> anyhow::Result<()> {
     }
 
     let home = profile::home()?;
-    let passphrase = term::read_passphrase(options.stdin, true)?;
+    let passphrase = if options.stdin {
+        term::passphrase_stdin()
+    } else {
+        term::passphrase_confirm()
+    }?;
     let spinner = term::spinner("Creating your 🌱 Ed25519 keypair...");
     let profile = Profile::init(home, passphrase)?;
     spinner.finish();
@@ -102,6 +106,7 @@ pub fn init(options: Options) -> anyhow::Result<()> {
 pub fn authenticate(profile: &Profile, options: Options) -> anyhow::Result<()> {
     let agent = ssh::agent::Agent::connect()?;
 
+    // TODO: Only show this if we're not authenticated.
     term::headline(&format!(
         "🌱 Authenticating as {}",
         term::format::Identity::new(profile).styled()
@@ -113,7 +118,11 @@ pub fn authenticate(profile: &Profile, options: Options) -> anyhow::Result<()> {
 
         // TODO: We should show the spinner on the passphrase prompt,
         // otherwise it seems like the passphrase is valid even if it isn't.
-        let passphrase = term::read_passphrase(options.stdin, false)?;
+        let passphrase = if options.stdin {
+            term::passphrase_stdin()
+        } else {
+            term::passphrase()
+        }?;
         let spinner = term::spinner("Unlocking...");
         let mut agent = ssh::agent::Agent::connect()?;
         let secret = profile

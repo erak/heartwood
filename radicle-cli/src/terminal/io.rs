@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use inquire::ui::{ErrorMessageRenderConfig, StyleSheet, Styled};
 use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select};
+use once_cell::sync::Lazy;
 
 use radicle::cob::issue::Issue;
 use radicle::cob::thread::CommentId;
@@ -20,6 +21,38 @@ use super::Error;
 use super::{style, Paint};
 
 pub const TAB: &str = "    ";
+
+/// Render configuration.
+pub static CONFIG: Lazy<RenderConfig> = Lazy::new(|| {
+    RenderConfig {
+        prompt: StyleSheet::new().with_fg(Color::LightCyan),
+        prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
+        answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
+        answer: StyleSheet::new(),
+        error_message: ErrorMessageRenderConfig::default_colored()
+            .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
+        ..RenderConfig::default_colored() // prompt_prefix: Styled<&'static str>,
+                                          // answered_prompt_prefix: Styled<&'static str>,
+                                          // prompt: StyleSheet,
+                                          // default_value: StyleSheet,
+                                          // placeholder: StyleSheet,
+                                          // help_message: StyleSheet,
+                                          // password_mask: char,
+                                          // text_input: StyleSheet,
+                                          // answer: StyleSheet,
+                                          // canceled_prompt_indicator: Styled<&'static str>,
+                                          // error_message: ErrorMessageRenderConfig,
+                                          // highlighted_option_prefix: Styled<&'static str>,
+                                          // scroll_up_prefix: Styled<&'static str>,
+                                          // scroll_down_prefix: Styled<&'static str>,
+                                          // selected_checkbox: Styled<&'static str>,
+                                          // unselected_checkbox: Styled<&'static str>,
+                                          // option_index_prefix: IndexPrefix,
+                                          // option: StyleSheet,
+                                          // calendar: CalendarRenderConfig,
+                                          // editor_prompt: StyleSheet,
+    }
+});
 
 #[macro_export]
 macro_rules! info {
@@ -54,7 +87,7 @@ pub fn tip_args(args: fmt::Arguments) {
     println!("👉 {}", style(format!("{args}")).italic());
 }
 
-pub fn width() -> Option<usize> {
+pub fn columns() -> Option<usize> {
     termion::terminal_size().map(|(cols, _)| cols as usize).ok()
 }
 
@@ -166,7 +199,7 @@ pub fn signer(profile: &Profile) -> anyhow::Result<Box<dyn Signer>> {
         return Ok(signer);
     }
 
-    let passphrase = secret_input();
+    let passphrase = passphrase()?;
     let spinner = spinner("Unsealing key...");
     let signer = MemorySigner::load(&profile.keystore, passphrase)?;
 
@@ -174,63 +207,12 @@ pub fn signer(profile: &Profile) -> anyhow::Result<Box<dyn Signer>> {
     Ok(signer.boxed())
 }
 
-// pub fn theme() -> ColorfulTheme {
-//     ColorfulTheme {
-//         success_prefix: style("✓".to_owned()).for_stderr().green(),
-//         prompt_prefix: style("☛".to_owned()).white().for_stderr(),
-//         prompt_suffix: style("".to_owned()).cyan().for_stderr(),
-//         prompt_style: Style::new().cyan().bold().for_stderr(),
-//         active_item_style: Style::new().for_stderr().yellow().reverse(),
-//         active_item_prefix: style("☛".to_owned()).yellow().for_stderr(),
-//         picked_item_prefix: style("☛".to_owned()).yellow().for_stderr(),
-//         inactive_item_prefix: style(" ".to_string()).for_stderr(),
-//         inactive_item_style: Style::new().yellow().for_stderr(),
-//         error_prefix: style("× Error:".to_owned()).red().for_stderr(),
-//         success_suffix: style(":".to_owned()).cyan().for_stderr(),
-
-//         ..ColorfulTheme::default()
-//     }
-// }
-
-fn theme() -> RenderConfig {
-    RenderConfig {
-        prompt: StyleSheet::new().with_fg(Color::LightCyan),
-        prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
-        answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
-        answer: StyleSheet::new(),
-        error_message: ErrorMessageRenderConfig::default_colored()
-            .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
-        ..RenderConfig::default_colored() // prompt_prefix: Styled<&'static str>,
-                                          // answered_prompt_prefix: Styled<&'static str>,
-                                          // prompt: StyleSheet,
-                                          // default_value: StyleSheet,
-                                          // placeholder: StyleSheet,
-                                          // help_message: StyleSheet,
-                                          // password_mask: char,
-                                          // text_input: StyleSheet,
-                                          // answer: StyleSheet,
-                                          // canceled_prompt_indicator: Styled<&'static str>,
-                                          // error_message: ErrorMessageRenderConfig,
-                                          // highlighted_option_prefix: Styled<&'static str>,
-                                          // scroll_up_prefix: Styled<&'static str>,
-                                          // scroll_down_prefix: Styled<&'static str>,
-                                          // selected_checkbox: Styled<&'static str>,
-                                          // unselected_checkbox: Styled<&'static str>,
-                                          // option_index_prefix: IndexPrefix,
-                                          // option: StyleSheet,
-                                          // calendar: CalendarRenderConfig,
-                                          // editor_prompt: StyleSheet,
-    }
-}
-
 pub fn text_input<S, E>(message: &str, default: Option<S>) -> anyhow::Result<S>
 where
     S: fmt::Display + std::str::FromStr<Err = E> + Clone,
     E: fmt::Debug + fmt::Display,
 {
-    let theme = theme();
-    let mut input = CustomType::<S>::new(message).with_render_config(theme);
-
+    let input = CustomType::<S>::new(message).with_render_config(*CONFIG);
     let value = match default {
         Some(default) => input.with_default(default).prompt()?,
         None => input.prompt()?,
@@ -271,8 +253,7 @@ where
     S: fmt::Display + fmt::Debug + FromStr<Err = E> + Clone,
     E: fmt::Debug + fmt::Display,
 {
-    let theme = theme();
-    let input = CustomType::<Optional<S>>::new(message).with_render_config(theme);
+    let input = CustomType::<Optional<S>>::new(message).with_render_config(*CONFIG);
     let value = if let Some(init) = initial {
         input.with_default(Optional { option: Some(init) }).prompt()
     } else {
@@ -282,67 +263,48 @@ where
     Ok(value.option)
 }
 
-pub fn secret_input() -> Passphrase {
-    secret_input_with_prompt("Passphrase:")
+pub fn passphrase() -> Result<Passphrase, anyhow::Error> {
+    if let Some(p) = profile::env::passphrase() {
+        Ok(p)
+    } else {
+        Ok(Passphrase::from(
+            Password::new("Passphrase:")
+                .with_render_config(*CONFIG)
+                .with_display_mode(inquire::PasswordDisplayMode::Masked)
+                .without_confirmation()
+                .prompt()?,
+        ))
+    }
 }
 
-// TODO: This prompt shows success just for entering a password,
-// even if the password is later found out to be wrong.
-// We should handle this differently.
-pub fn secret_input_with_prompt(prompt: &str) -> Passphrase {
-    Passphrase::from(
-        Password::new(prompt)
-            .with_render_config(theme())
-            .with_display_mode(inquire::PasswordDisplayMode::Masked)
-            .without_confirmation()
-            .prompt()
-            .unwrap(),
-    )
+pub fn passphrase_confirm() -> Result<Passphrase, anyhow::Error> {
+    if let Some(p) = profile::env::passphrase() {
+        Ok(p)
+    } else {
+        Ok(Passphrase::from(
+            Password::new("Passphrase:")
+                .with_render_config(*CONFIG)
+                .with_display_mode(inquire::PasswordDisplayMode::Masked)
+                .with_custom_confirmation_message("Repeat passphrase:")
+                .with_custom_confirmation_error_message("The passphrases don't match.")
+                .prompt()?,
+        ))
+    }
 }
 
-pub fn secret_input_with_confirmation() -> Passphrase {
-    Passphrase::from(
-        Password::new("Passphrase:")
-            .with_render_config(theme())
-            .with_display_mode(inquire::PasswordDisplayMode::Masked)
-            .with_custom_confirmation_message("Repeat passphrase:")
-            .with_custom_confirmation_error_message("The passphrases don't match.")
-            .prompt()
-            .unwrap(),
-    )
-}
-
-pub fn secret_stdin() -> Result<Passphrase, anyhow::Error> {
+pub fn passphrase_stdin() -> Result<Passphrase, anyhow::Error> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input)?;
 
     Ok(Passphrase::from(input.trim_end().to_owned()))
 }
 
-pub fn read_passphrase(stdin: bool, confirm: bool) -> Result<Passphrase, anyhow::Error> {
-    let passphrase = match profile::env::read_passphrase() {
-        Some(input) => input,
-        None => {
-            if stdin {
-                secret_stdin()?
-            } else if confirm {
-                secret_input_with_confirmation()
-            } else {
-                secret_input()
-            }
-        }
-    };
-
-    Ok(passphrase)
-}
-
 pub fn select<'a, T>(options: &'a [T], active: &'a T) -> Option<&'a T>
 where
     T: fmt::Display + Eq + PartialEq + Clone,
 {
-    let theme = theme();
     let active = options.iter().position(|o| o == active);
-    let selection = Select::new("", options.iter().collect::<Vec<_>>()).with_render_config(theme);
+    let selection = Select::new("", options.iter().collect::<Vec<_>>()).with_render_config(*CONFIG);
 
     let result = if let Some(active) = active {
         selection
@@ -360,10 +322,9 @@ pub fn select_with_prompt<'a, T>(prompt: &str, options: &'a [T], active: &'a T) 
 where
     T: fmt::Display + Eq + PartialEq,
 {
-    let theme = theme();
     let active = options.iter().position(|o| o == active);
     let selection =
-        Select::new(prompt, options.iter().collect::<Vec<_>>()).with_render_config(theme);
+        Select::new(prompt, options.iter().collect::<Vec<_>>()).with_render_config(*CONFIG);
 
     let result = if let Some(active) = active {
         selection.with_starting_cursor(active).prompt_skippable()
