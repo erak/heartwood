@@ -1,7 +1,7 @@
 use radicle::git;
 
 use crate::terminal as term;
-use crate::terminal::table::Cell as _;
+use crate::terminal::cell::Cell as _;
 
 /// The user supplied `Patch` description.
 #[derive(Clone, Debug, PartialEq, Eq)]

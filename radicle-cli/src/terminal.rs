@@ -1,5 +1,6 @@
 pub mod ansi;
 pub mod args;
+pub mod cell;
 pub mod cob;
 pub mod command;
 pub mod format;
@@ -13,10 +14,6 @@ use std::ffi::OsString;
 use std::process;
 
 use radicle::profile::Profile;
-
-pub fn style<T>(item: T) -> Paint<T> {
-    paint(item)
-}
 
 pub use ansi::{paint, Paint};
 pub use args::{Args, Error, Help};
@@ -176,4 +173,8 @@ impl From<bool> for Interactive {
             Interactive::No
         }
     }
+}
+
+pub fn style<T>(item: T) -> Paint<T> {
+    paint(item)
 }

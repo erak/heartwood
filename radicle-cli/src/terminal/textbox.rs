@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::terminal as term;
-use crate::terminal::table::Cell as _;
+use crate::terminal::cell::Cell as _;
 
 pub struct TextBox {
     pub body: String,
@@ -48,7 +48,7 @@ impl fmt::Display for TextBox {
         writeln!(f, "┌{}{}┐", connector, "─".repeat(header_width))?;
 
         for l in self.body.lines() {
-            writeln!(f, "│ {}│", l.pad_left(width - 1))?;
+            writeln!(f, "│ {}│", l.pad(width - 1))?;
         }
 
         let (connector, footer_width) = if !self.last {

@@ -16,15 +16,12 @@
 //! aphid       ladybug
 //! spider mite persimilis
 //! ```
-
-use std::fmt::Display;
 use std::io;
 
 use crate::terminal as term;
-use unicode_width::UnicodeWidthStr;
+use crate::terminal::cell::Cell;
 
-use super::Paint;
-
+/// Used to specify maximum width or height.
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct Max {
     width: Option<usize>,
@@ -33,143 +30,10 @@ pub struct Max {
 
 #[derive(Debug, Default)]
 pub struct TableOptions {
+    /// Whether the table should be allowed to overflow.
     pub overflow: bool,
+    /// The maximum width and height.
     pub max: Max,
-}
-
-pub trait Cell: Display {
-    type Truncated: Cell;
-    type Padded: Cell;
-
-    fn width(&self) -> usize;
-    fn truncate(&self, width: usize, delim: &str) -> Self::Truncated;
-    fn pad_left(&self, padding: usize) -> Self::Padded;
-}
-
-impl Cell for Paint<String> {
-    type Truncated = Self;
-    type Padded = Self;
-
-    fn width(&self) -> usize {
-        UnicodeWidthStr::width(self.content())
-    }
-
-    fn truncate(&self, width: usize, delim: &str) -> Self {
-        Self {
-            item: self.item.truncate(width, delim),
-            style: self.style,
-        }
-    }
-
-    fn pad_left(&self, padding: usize) -> Self {
-        Self {
-            item: self.item.pad_left(padding),
-            style: self.style,
-        }
-    }
-}
-
-impl Cell for Paint<&str> {
-    type Truncated = Paint<String>;
-    type Padded = Paint<String>;
-
-    fn width(&self) -> usize {
-        Cell::width(self.item)
-    }
-
-    fn truncate(&self, width: usize, delim: &str) -> Paint<String> {
-        Paint {
-            item: self.item.truncate(width, delim),
-            style: self.style,
-        }
-    }
-
-    fn pad_left(&self, padding: usize) -> Paint<String> {
-        Paint {
-            item: self.item.pad_left(padding),
-            style: self.style,
-        }
-    }
-}
-
-impl Cell for String {
-    type Truncated = Self;
-    type Padded = Self;
-
-    fn width(&self) -> usize {
-        Cell::width(self.as_str())
-    }
-
-    fn truncate(&self, width: usize, delim: &str) -> Self {
-        self.as_str().truncate(width, delim)
-    }
-
-    fn pad_left(&self, padding: usize) -> Self {
-        self.as_str().pad_left(padding)
-    }
-}
-
-impl Cell for str {
-    type Truncated = String;
-    type Padded = String;
-
-    fn width(&self) -> usize {
-        UnicodeWidthStr::width(self)
-    }
-
-    fn truncate(&self, width: usize, delim: &str) -> String {
-        use unicode_segmentation::UnicodeSegmentation as _;
-
-        if width < Cell::width(self) {
-            let d = Cell::width(delim);
-            if width < d {
-                // If we can't even fit the delimiter, just return an empty string.
-                return String::new();
-            }
-            // Find the unicode byte boundary where the display width is the largest,
-            // while being smaller than the given max width.
-            let mut cols = 0;
-            let mut boundary = 0;
-            for g in self.graphemes(true) {
-                let c = Cell::width(g);
-                if cols + c + d > width {
-                    break;
-                }
-                boundary += g.len();
-                cols += c;
-            }
-            format!("{}{delim}", &self[..boundary])
-        } else {
-            self.to_owned()
-        }
-    }
-
-    fn pad_left(&self, max: usize) -> String {
-        let width = Cell::width(self);
-
-        if width < max {
-            format!("{self}{}", " ".repeat(max - width))
-        } else {
-            self.to_owned()
-        }
-    }
-}
-
-impl<T: Cell + ?Sized> Cell for &T {
-    type Truncated = T::Truncated;
-    type Padded = T::Padded;
-
-    fn width(&self) -> usize {
-        T::width(self)
-    }
-
-    fn truncate(&self, width: usize, delim: &str) -> Self::Truncated {
-        T::truncate(self, width, delim)
-    }
-
-    fn pad_left(&self, padding: usize) -> Self::Padded {
-        T::pad_left(self, padding)
-    }
 }
 
 #[derive(Debug)]
@@ -221,7 +85,7 @@ impl<const W: usize> Table<W> {
                 if i == cells - 1 || self.opts.overflow {
                     output.push_str(cell.to_string().as_str());
                 } else {
-                    output.push_str(cell.pad_left(self.widths[i]).as_str());
+                    output.push_str(cell.pad(self.widths[i]).as_str());
                     output.push(' ');
                 }
             }
@@ -248,7 +112,7 @@ impl<const W: usize> Table<W> {
                 print!("└── ");
             }
             for (i, cell) in row.iter().enumerate() {
-                print!("{} ", cell.pad_left(self.widths[i]));
+                print!("{} ", cell.pad(self.widths[i]));
             }
             println!();
         }

@@ -6,7 +6,7 @@ use inquire::{ui::Color, ui::RenderConfig, Confirm, CustomType, Password, Select
 use once_cell::sync::Lazy;
 
 use radicle::cob::issue::Issue;
-use radicle::cob::thread::CommentId;
+use radicle::cob::thread::{Comment, CommentId};
 use radicle::crypto::ssh::keystore::Passphrase;
 use radicle::crypto::Signer;
 use radicle::profile;
@@ -23,35 +23,14 @@ use super::{style, Paint};
 pub const TAB: &str = "    ";
 
 /// Render configuration.
-pub static CONFIG: Lazy<RenderConfig> = Lazy::new(|| {
-    RenderConfig {
-        prompt: StyleSheet::new().with_fg(Color::LightCyan),
-        prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
-        answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
-        answer: StyleSheet::new(),
-        error_message: ErrorMessageRenderConfig::default_colored()
-            .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
-        ..RenderConfig::default_colored() // prompt_prefix: Styled<&'static str>,
-                                          // answered_prompt_prefix: Styled<&'static str>,
-                                          // prompt: StyleSheet,
-                                          // default_value: StyleSheet,
-                                          // placeholder: StyleSheet,
-                                          // help_message: StyleSheet,
-                                          // password_mask: char,
-                                          // text_input: StyleSheet,
-                                          // answer: StyleSheet,
-                                          // canceled_prompt_indicator: Styled<&'static str>,
-                                          // error_message: ErrorMessageRenderConfig,
-                                          // highlighted_option_prefix: Styled<&'static str>,
-                                          // scroll_up_prefix: Styled<&'static str>,
-                                          // scroll_down_prefix: Styled<&'static str>,
-                                          // selected_checkbox: Styled<&'static str>,
-                                          // unselected_checkbox: Styled<&'static str>,
-                                          // option_index_prefix: IndexPrefix,
-                                          // option: StyleSheet,
-                                          // calendar: CalendarRenderConfig,
-                                          // editor_prompt: StyleSheet,
-    }
+pub static CONFIG: Lazy<RenderConfig> = Lazy::new(|| RenderConfig {
+    prompt: StyleSheet::new().with_fg(Color::LightCyan),
+    prompt_prefix: Styled::new("?").with_fg(Color::LightBlue),
+    answered_prompt_prefix: Styled::new("✓").with_fg(Color::LightGreen),
+    answer: StyleSheet::new(),
+    error_message: ErrorMessageRenderConfig::default_colored()
+        .with_prefix(Styled::new("×").with_fg(Color::LightRed)),
+    ..RenderConfig::default_colored()
 });
 
 #[macro_export]
@@ -177,10 +156,10 @@ pub fn fail(header: &str, error: &anyhow::Error) {
 }
 
 pub fn ask<D: fmt::Display>(prompt: D, default: bool) -> bool {
-    let prompt = format!("{} {}", Paint::white("☞".to_owned()), prompt);
+    let prompt = format!("{} {}", Paint::blue("?".to_owned()), prompt);
 
     Confirm::new(&prompt)
-        .with_default(true)
+        .with_default(default)
         .prompt()
         .unwrap_or_default()
 }
@@ -198,16 +177,16 @@ pub fn signer(profile: &Profile) -> anyhow::Result<Box<dyn Signer>> {
     if let Ok(signer) = profile.signer() {
         return Ok(signer);
     }
-
     let passphrase = passphrase()?;
     let spinner = spinner("Unsealing key...");
     let signer = MemorySigner::load(&profile.keystore, passphrase)?;
 
     spinner.finish();
+
     Ok(signer.boxed())
 }
 
-pub fn text_input<S, E>(message: &str, default: Option<S>) -> anyhow::Result<S>
+pub fn input<S, E>(message: &str, default: Option<S>) -> anyhow::Result<S>
 where
     S: fmt::Display + std::str::FromStr<Err = E> + Clone,
     E: fmt::Debug + fmt::Display,
@@ -248,7 +227,7 @@ impl<T: FromStr> FromStr for Optional<T> {
     }
 }
 
-pub fn text_input_optional<S, E>(message: &str, initial: Option<S>) -> anyhow::Result<Option<S>>
+pub fn input_optional<S, E>(message: &str, initial: Option<S>) -> anyhow::Result<Option<S>>
 where
     S: fmt::Display + fmt::Debug + FromStr<Err = E> + Clone,
     E: fmt::Debug + fmt::Display,
@@ -336,26 +315,18 @@ where
     result
 }
 
-pub fn comment_select(issue: &Issue) -> Option<CommentId> {
-    todo!();
-    // let mut items = vec![issue.description().unwrap_or_default()];
-    // items.extend(
-    //     issue
-    //         .comments()
-    //         .map(|(, i)| i.body().to_owned())
-    //         .collect::<Vec<_>>(),
-    // );
+pub fn comment_select(issue: &Issue) -> Option<(&CommentId, &Comment)> {
+    let comments = issue.comments().collect::<Vec<_>>();
+    let selection = Select::new(
+        "Which comment do you want to react to?",
+        (0..comments.len()).collect(),
+    )
+    .with_render_config(*CONFIG)
+    .with_formatter(&|i| comments[i.index].1.body().to_owned())
+    .prompt()
+    .ok()?;
 
-    // let theme = theme();
-    // let selection = Select::new("Which comment do you want to react to?", items)
-    //     .with_render_config(theme)
-    //     .with_starting_cursor(0)
-    //     .prompt()
-    //     .unwrap();
-
-    // selection
-    //     .and_then(|n| issue.comments().nth(n))
-    //     .map(|(id, _)| *id)
+    comments.get(selection).copied()
 }
 
 pub fn markdown(content: &str) {
@@ -371,6 +342,7 @@ fn _info(args: std::fmt::Arguments) {
 pub mod proposal {
     use std::fmt::Write as _;
 
+    use super::*;
     use radicle::{
         cob::identity::{self, Proposal},
         git::Oid,
@@ -382,41 +354,38 @@ pub mod proposal {
     pub fn revision_select(
         proposal: &Proposal,
     ) -> Option<(&identity::RevisionId, &identity::Revision)> {
-        todo!();
-        // let selection = dialoguer::Select::with_theme(&theme())
-        //     .with_prompt("Which revision do you want to select?")
-        //     .items(
-        //         &proposal
-        //             .revisions()
-        //             .map(|(rid, _)| rid.to_string())
-        //             .collect::<Vec<_>>(),
-        //     )
-        //     .default(0)
-        //     .interact_opt()
-        //     .unwrap();
+        let revisions = proposal.revisions().collect::<Vec<_>>();
+        let selection = Select::new(
+            "Which revision do you want to select?",
+            (0..revisions.len()).collect(),
+        )
+        .with_vim_mode(true)
+        .with_formatter(&|ix| revisions[ix.index].0.to_string())
+        .with_render_config(*CONFIG)
+        .prompt()
+        .ok()?;
 
-        // selection.and_then(|n| proposal.revisions().nth(n))
+        revisions.get(selection).copied()
     }
 
     pub fn revision_commit_select<'a>(
         proposal: &'a Proposal,
         previous: &'a Identity<Oid>,
     ) -> Option<(&'a identity::RevisionId, &'a identity::Revision)> {
-        todo!();
-        // let selection = dialoguer::Select::with_theme(&theme())
-        //     .with_prompt("Which revision do you want to commit?")
-        //     .items(
-        //         &proposal
-        //             .revisions()
-        //             .filter(|(_, r)| r.is_quorum_reached(previous))
-        //             .map(|(rid, _)| rid.to_string())
-        //             .collect::<Vec<_>>(),
-        //     )
-        //     .default(0)
-        //     .interact_opt()
-        //     .unwrap();
+        let revisions = proposal
+            .revisions()
+            .filter(|(_, r)| r.is_quorum_reached(previous))
+            .collect::<Vec<_>>();
+        let selection = Select::new(
+            "Which revision do you want to commit?",
+            (0..revisions.len()).collect(),
+        )
+        .with_formatter(&|ix| revisions[ix.index].0.to_string())
+        .with_render_config(*CONFIG)
+        .prompt()
+        .ok()?;
 
-        // selection.and_then(|n| proposal.revisions().nth(n))
+        revisions.get(selection).copied()
     }
 
     pub fn diff(proposal: &identity::Revision, previous: &Identity<Oid>) -> anyhow::Result<String> {

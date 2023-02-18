@@ -218,8 +218,8 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
         }
         Operation::React { id, reaction } => {
             if let Ok(mut issue) = issues.get_mut(&id) {
-                let comment_id = term::comment_select(&issue).unwrap();
-                issue.react(comment_id, reaction, &signer)?;
+                let (comment_id, _) = term::comment_select(&issue).unwrap();
+                issue.react(*comment_id, reaction, &signer)?;
             }
         }
         Operation::Open { title, description } => {
