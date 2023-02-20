@@ -9,8 +9,8 @@ use crate::Semilattice;
 /// In case of conflict, uses the [`Semilattice`] instance of `T` to merge.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LWWReg<T, C = clock::Lamport> {
-    clock: Max<C>,
-    value: T,
+    pub clock: Max<C>,
+    pub value: T,
 }
 
 impl<T: Semilattice, C: PartialOrd> LWWReg<T, C> {

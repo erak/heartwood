@@ -8,7 +8,7 @@ use crate::{clock, Semilattice};
 /// the "add" takes precedence over the "remove".
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LWWMap<K, V, C = clock::Lamport> {
-    inner: GMap<K, LWWReg<Option<V>, C>>,
+    pub inner: GMap<K, LWWReg<Option<V>, C>>,
 }
 
 impl<K: Ord, V: Semilattice, C: PartialOrd + Ord> LWWMap<K, V, C> {

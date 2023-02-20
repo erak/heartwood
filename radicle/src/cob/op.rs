@@ -11,7 +11,7 @@ use radicle_crypto::{PublicKey, Signer};
 
 /// Identifies an [`Op`] internally and within the change graph.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct OpId(Lamport, ActorId);
+pub struct OpId(pub Lamport, pub ActorId);
 
 impl OpId {
     /// Create a new operation id.

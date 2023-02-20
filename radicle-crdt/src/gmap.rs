@@ -9,7 +9,7 @@ use crate::Semilattice;
 /// Conflicting elements are merged via the [`Semilattice`] instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GMap<K, V> {
-    inner: BTreeMap<K, V>,
+    pub inner: BTreeMap<K, V>,
 }
 
 impl<K: Ord, V: Semilattice> GMap<K, V> {

@@ -11,7 +11,7 @@ use crate::Semilattice as _;
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Lamport {
-    counter: Max<u64>,
+    pub counter: Max<u64>,
 }
 
 impl Lamport {
@@ -67,7 +67,7 @@ impl Bounded for Lamport {
 #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Physical {
-    seconds: u64,
+    pub seconds: u64,
 }
 
 impl Physical {

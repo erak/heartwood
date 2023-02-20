@@ -366,7 +366,7 @@ impl From<PublicKey> for String {
 
 impl fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "PublicKey({})", self)
+        write!(f, r#"PublicKey::from_str("{}").unwrap()"#, self)
     }
 }
 

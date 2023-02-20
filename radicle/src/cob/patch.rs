@@ -818,13 +818,16 @@ impl<'a> Patches<'a> {
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeMap;
     use std::str::FromStr;
     use std::{array, iter};
 
     use radicle_crdt::test::{assert_laws, WeightedGenerator};
+    use radicle_crdt::LWWMap;
 
     use pretty_assertions::assert_eq;
     use qcheck::{Arbitrary, TestResult};
+    use radicle_git_ext::Oid;
 
     use super::*;
     use crate::cob::op::{Actor, ActorId};
@@ -944,31 +947,403 @@ mod test {
             let [p1, p2, p3] = log.permutations;
 
             let mut t1 = t.clone();
-            if t1.apply(p1).is_err() {
+            if t1.apply(p1.clone()).is_err() {
                 return TestResult::discard();
             }
 
             let mut t2 = t.clone();
-            if t2.apply(p2).is_err() {
+            if t2.apply(p2.clone()).is_err() {
                 return TestResult::discard();
             }
 
-            let mut t3 = t;
-            if t3.apply(p3).is_err() {
+            let mut t3 = t.clone();
+            if t3.apply(p3.clone()).is_err() {
                 return TestResult::discard();
+            }
+
+            if t1 != t2 {
+                dbg!(&t);
+                dbg!(&p1);
+                dbg!(&p2);
+                dbg!(&p3);
             }
 
             assert_eq!(t1, t2);
+
+            if t2 != t3 {
+                dbg!(&t);
+                dbg!(&p1);
+                dbg!(&p2);
+                dbg!(&p3);
+            }
+
             assert_eq!(t2, t3);
             assert_laws(&t1, &t2, &t3);
 
             TestResult::passed()
         }
 
-        qcheck::QuickCheck::new()
-            .min_tests_passed(100)
-            .gen(qcheck::Gen::new(7))
-            .quickcheck(property as fn(Changes<3>) -> TestResult);
+        loop {
+            qcheck::QuickCheck::new()
+                .min_tests_passed(100)
+                .gen(qcheck::Gen::new(7))
+                .quickcheck(property as fn(Changes<3>) -> TestResult);
+        }
+    }
+
+    #[test]
+    fn failing_test_case() {
+        use clock::Lamport;
+        use clock::Physical;
+
+        let t = Patch {
+            title: LWWReg {
+                clock: Max(Lamport { counter: Max(0) }),
+                value: Max("".to_string()),
+            },
+            description: LWWReg {
+                clock: Max(Lamport { counter: Max(0) }),
+                value: Max("".to_string()),
+            },
+            state: LWWReg {
+                clock: Max(Lamport { counter: Max(0) }),
+                value: Max(State::Proposed),
+            },
+            target: LWWReg {
+                clock: Max(Lamport { counter: Max(0) }),
+                value: Max(MergeTarget::Delegates),
+            },
+            tags: LWWSet {
+                inner: LWWMap {
+                    inner: GMap {
+                        inner: BTreeMap::new(),
+                    },
+                },
+            },
+            revisions: GMap {
+                inner: BTreeMap::new(),
+            },
+        };
+        let p1 = [
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("1c5793dfa7489758e4a7dfa3c4c0ab22cb9705d5").unwrap(),
+                    oid: Oid::from_str("f8aef85931e9e2c7c48dc946fe843992bbfab3a9").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(0),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("d5de12acdc0103ad424ddb487f5d9d7f12dcefab").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(1),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Redact {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(1),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(2),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("c3aaaa21e8fcbc0b3ba1ca163795114f48302de0").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(4),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Merge {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(3),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                    commit: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(5),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+        ];
+        let p2 = [
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("d5de12acdc0103ad424ddb487f5d9d7f12dcefab").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(1),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("1c5793dfa7489758e4a7dfa3c4c0ab22cb9705d5").unwrap(),
+                    oid: Oid::from_str("f8aef85931e9e2c7c48dc946fe843992bbfab3a9").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(0),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Merge {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(3),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                    commit: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(5),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Redact {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(1),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(2),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("c3aaaa21e8fcbc0b3ba1ca163795114f48302de0").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(4),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+        ];
+
+        let p3 = [
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("7f5986c63fe4d8a1ce67d91cd7c3e346e6332124").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(3),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("1c5793dfa7489758e4a7dfa3c4c0ab22cb9705d5").unwrap(),
+                    oid: Oid::from_str("f8aef85931e9e2c7c48dc946fe843992bbfab3a9").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(0),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Merge {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(3),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                    commit: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(5),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("d5de12acdc0103ad424ddb487f5d9d7f12dcefab").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(1),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Revision {
+                    base: Oid::from_str("71b997145a72816e1e186f3199a4fd6424404472").unwrap(),
+                    oid: Oid::from_str("c3aaaa21e8fcbc0b3ba1ca163795114f48302de0").unwrap(),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(4),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+            Op {
+                action: Action::Redact {
+                    revision: OpId(
+                        Lamport {
+                            counter: Max(1),
+                        },
+                        PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                    ),
+                },
+                author: PublicKey::from_str("z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP").unwrap(),
+                clock: Lamport {
+                    counter: Max(2),
+                },
+                timestamp: Physical {
+                    seconds: 1676891154,
+                },
+            },
+        ];
+
+        let mut t1 = t.clone();
+        t1.apply(p1.clone()).unwrap();
+
+        let mut t2 = t.clone();
+        t2.apply(p2.clone()).unwrap();
+
+        let mut t3 = t.clone();
+        t3.apply(p3.clone()).unwrap();
+
+        assert_eq!(t1, t2);
+        assert_eq!(t2, t3);
+        assert_laws(&t1, &t2, &t3);
     }
 
     #[test]

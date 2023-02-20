@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 use std::{cmp, ops};
 
 use num_traits::Bounded;
@@ -5,9 +6,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::Semilattice;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct Max<T>(T);
+pub struct Max<T>(pub T);
+
+impl<T: Debug> Debug for Max<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, r#"Max({:?})"#, self.0)
+    }
+}
 
 impl<T> Max<T> {
     pub fn get(&self) -> &T {
