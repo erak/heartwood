@@ -40,6 +40,9 @@ pub mod rad_rm;
 pub mod rad_self;
 #[path = "commands/track.rs"]
 pub mod rad_track;
+#[cfg(feature = "tui")]
+#[path = "commands/tui.rs"]
+pub mod rad_tui;
 #[path = "commands/unassign.rs"]
 pub mod rad_unassign;
 #[path = "commands/untrack.rs"]

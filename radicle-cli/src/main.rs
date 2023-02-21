@@ -270,6 +270,17 @@ fn run_other(exe: &str, args: &[OsString]) -> Result<(), Option<anyhow::Error>> 
                 args.to_vec(),
             );
         }
+        "tui" => {
+            #[cfg(feature = "tui")]
+            term::run_command_args::<rad_tui::Options, _>(
+                rad_tui::HELP,
+                "Terminal UI",
+                rad_tui::run,
+                args.to_vec()
+            );
+            #[cfg(not(feature = "tui"))]
+            return Err(Some(anyhow!("`{}` not found. Make sure to run a build with feature 'tui' enabled.", exe)));
+        }
         "unassign" => {
             term::run_command_args::<rad_unassign::Options, _>(
                 rad_unassign::HELP,
