@@ -48,3 +48,40 @@ impl ComponentLayout for HorizontalLayout {
             .collect()
     }
 }
+
+/// A layout that packs components vertically based on their height.
+pub struct VerticalLayout {
+    components: Vec<BoxedComponent>,
+    area: Rect,
+}
+
+impl VerticalLayout {
+    pub fn new(components: Vec<BoxedComponent>, area: Rect) -> Self {
+        Self { components, area }
+    }
+}
+
+impl ComponentLayout for VerticalLayout {
+    fn build(self) -> Vec<(BoxedComponent, Rect)> {
+        let constraints = self
+            .components
+            .iter()
+            .map(|c| {
+                Constraint::Length(
+                    c.query(Attribute::Height)
+                        .unwrap_or(AttrValue::Size(0))
+                        .unwrap_size(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(constraints)
+            .split(self.area);
+
+        self.components
+            .into_iter()
+            .zip(layout.into_iter())
+            .collect()
+    }
+}

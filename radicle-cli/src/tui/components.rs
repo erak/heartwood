@@ -5,7 +5,7 @@ use tuirealm::tui::text::Span;
 
 use tuirealm::{Frame, MockComponent, State};
 
-use crate::tui::layout::{ComponentLayout, HorizontalLayout};
+use crate::tui::layout::{ComponentLayout, HorizontalLayout, VerticalLayout};
 
 const WHITESPACE: char = ' ';
 
@@ -403,6 +403,132 @@ impl MockComponent for ShortcutBar {
             }
 
             let layout = HorizontalLayout::new(components, area).build();
+            for (mut component, area) in layout {
+                component.view(frame, area);
+            }
+        }
+    }
+
+    fn query(&self, attr: Attribute) -> Option<AttrValue> {
+        self.attributes.get(attr)
+    }
+
+    fn attr(&mut self, attr: Attribute, value: AttrValue) {
+        self.attributes.set(attr, value)
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _cmd: Cmd) -> CmdResult {
+        CmdResult::None
+    }
+}
+
+/// A component that displays a labeled property.
+#[derive(Clone)]
+pub struct Property {
+    attributes: Props,
+    label: Label,
+    property: Label,
+}
+
+impl Property {
+    pub fn new(label: &str, property: &str) -> Self {
+        let label = Label::new(label).width(20);
+        let property = Label::new(property).foreground(Color::Rgb(10, 206, 209));
+
+        Self {
+            attributes: Props::default(),
+            label: label.clone(),
+            property: property.clone(),
+        }
+        .height(1)
+    }
+
+    fn height(mut self, h: u16) -> Self {
+        self.attr(Attribute::Height, AttrValue::Size(h));
+        self
+    }
+}
+
+impl MockComponent for Property {
+    fn view(&mut self, frame: &mut Frame, area: Rect) {
+        let display = self
+            .attributes
+            .get_or(Attribute::Display, AttrValue::Flag(true))
+            .unwrap_flag();
+
+        if display {
+            let layout = HorizontalLayout::new(
+                vec![
+                    Box::new(self.label.clone()),
+                    Box::new(self.property.clone()),
+                ],
+                area,
+            )
+            .build();
+
+            for (mut component, area) in layout {
+                component.view(frame, area);
+            }
+        }
+    }
+
+    fn query(&self, attr: Attribute) -> Option<AttrValue> {
+        self.attributes.get(attr)
+    }
+
+    fn attr(&mut self, attr: Attribute, value: AttrValue) {
+        self.attributes.set(attr, value)
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _cmd: Cmd) -> CmdResult {
+        CmdResult::None
+    }
+}
+
+/// A component that can display lists of labeled properties
+pub struct PropertyList {
+    attributes: Props,
+    properties: Vec<Box<Property>>,
+}
+
+impl PropertyList {
+    pub fn child(mut self, property: Property) -> Self {
+        self.properties = [self.properties, vec![Box::new(property)]].concat();
+        self
+    }
+}
+
+impl Default for PropertyList {
+    fn default() -> Self {
+        Self {
+            attributes: Props::default(),
+            properties: vec![],
+        }
+    }
+}
+
+impl MockComponent for PropertyList {
+    fn view(&mut self, frame: &mut Frame, area: Rect) {
+        let display = self
+            .attributes
+            .get_or(Attribute::Display, AttrValue::Flag(true))
+            .unwrap_flag();
+
+        if display {
+            let mut components: Vec<Box<dyn MockComponent>> = vec![Box::new(Property::new("", ""))];
+            for property in &self.properties {
+                components.push(property.clone());
+            }
+
+            let layout = VerticalLayout::new(components, area).build();
             for (mut component, area) in layout {
                 component.view(frame, area);
             }
