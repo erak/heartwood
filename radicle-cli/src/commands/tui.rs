@@ -1,7 +1,18 @@
 use std::ffi::OsString;
 
+use anyhow::{anyhow, Context};
+
 use crate::terminal as term;
 use crate::terminal::args::{Args, Error, Help};
+
+use crate::tui::Window;
+
+use radicle::storage::ReadStorage;
+
+#[path = "tui/app.rs"]
+mod app;
+#[path = "tui/components.rs"]
+mod components;
 
 pub const HELP: Help = Help {
     name: "tui",
@@ -42,11 +53,21 @@ impl Args for Options {
 }
 
 pub fn run(_options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
-    let profile = ctx.profile()?;
-    let _storage = &profile.storage;
-    let _signer = term::signer(&profile)?;
+    let (_, id) = radicle::rad::cwd()
+        .map_err(|_| anyhow!("this command must be run in the context of a project"))?;
 
-    // Run TUI
+    let profile = ctx.profile()?;
+    let signer = term::signer(&profile)?;
+    let storage = &profile.storage;
+
+    let payload = storage
+        .get(signer.public_key(), id)?
+        .context("No project with such `id` exists")?;
+
+    let project = payload.project()?;
+
+    let mut window = Window::default();
+    window.run(&mut app::App::new(id, project))?;
 
     Ok(())
 }
