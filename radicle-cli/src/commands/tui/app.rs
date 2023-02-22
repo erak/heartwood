@@ -8,7 +8,7 @@ use tuirealm::props::{AttrValue, Attribute, BorderSides, Borders, Color, TextSpa
 use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
 use tuirealm::{Application, Frame, NoUserEvent, Sub, SubClause, SubEventClause};
 
-use crate::tui::components::{ApplicationTitle, Shortcut, ShortcutBar};
+use crate::tui::components::{ApplicationTitle, Property, PropertyList, Shortcut, ShortcutBar};
 use crate::tui::Tui;
 
 use super::components::GlobalPhantom;
@@ -101,9 +101,13 @@ impl Tui<Component, Message> for App {
         app.mount(
             Component::Content,
             Box::new(
-                Textarea::default()
-                    .borders(Borders::default().sides(BorderSides::NONE))
-                    .text_rows(&self.status()),
+                PropertyList::default()
+                    .child(Property::new("Id", &format!("{}", self.id)))
+                    .child(Property::new("Name", &format!("{}", self.project.name())))
+                    .child(Property::new(
+                        "Description",
+                        &format!("{}", self.project.description()),
+                    )),
             ),
             vec![],
         )?;

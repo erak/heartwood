@@ -3,7 +3,7 @@ use tui_realm_stdlib::{Phantom, Textarea};
 use tuirealm::event::{Event, Key, KeyEvent};
 use tuirealm::{Component, MockComponent, NoUserEvent};
 
-use crate::tui::components::{ApplicationTitle, ShortcutBar};
+use crate::tui::components::{ApplicationTitle, PropertyList, ShortcutBar};
 
 use super::app::Message;
 
@@ -11,6 +11,12 @@ use super::app::Message;
 /// passed around in the app, the following handlers need to be implemented for
 /// each component used.
 impl Component<Message, NoUserEvent> for ApplicationTitle {
+    fn on(&mut self, _event: Event<NoUserEvent>) -> Option<Message> {
+        None
+    }
+}
+
+impl Component<Message, NoUserEvent> for PropertyList {
     fn on(&mut self, _event: Event<NoUserEvent>) -> Option<Message> {
         None
     }
