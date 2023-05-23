@@ -200,13 +200,11 @@ impl IssueItem {
     }
 }
 
-impl TryFrom<(&Profile, &Repository, IssueId, Issue)> for IssueItem {
-    type Error = anyhow::Error;
-
-    fn try_from(value: (&Profile, &Repository, IssueId, Issue)) -> Result<Self, Self::Error> {
+impl From<(&Profile, &Repository, IssueId, Issue)> for IssueItem {
+    fn from(value: (&Profile, &Repository, IssueId, Issue)) -> Self {
         let (profile, _, id, issue) = value;
 
-        Ok(IssueItem {
+        IssueItem {
             id,
             state: *issue.state(),
             title: issue.title().into(),
@@ -223,7 +221,7 @@ impl TryFrom<(&Profile, &Repository, IssueId, Issue)> for IssueItem {
                 })
                 .collect::<Vec<_>>(),
             timestamp: issue.timestamp(),
-        })
+        }
     }
 }
 
@@ -287,6 +285,12 @@ impl ListItem for IssueItem {
             ]),
         ];
         tuirealm::tui::widgets::ListItem::new(lines)
+    }
+}
+
+impl PartialEq for IssueItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }
 

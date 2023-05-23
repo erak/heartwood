@@ -114,24 +114,21 @@ where
 
 impl<V> Default for ListModel<V>
 where
-    V: ListItem,
+    V: ListItem + Clone,
 {
     fn default() -> Self {
-        Self::new()
+        Self::new(&[])
     }
 }
 
 impl<V> ListModel<V>
 where
-    V: ListItem,
+    V: ListItem + Clone,
 {
-    pub fn new() -> Self {
-        Self { items: vec![] }
-    }
-
-    /// Pushes a new row to this model.
-    pub fn push_item(&mut self, item: V) {
-        self.items.push(item);
+    pub fn new(items: &[V]) -> Self {
+        Self {
+            items: items.to_vec(),
+        }
     }
 
     // Get the item count.
@@ -396,7 +393,7 @@ where
 /// A table component that can display a list of [`TableItem`]s hold by a [`TableModel`].
 pub struct List<V>
 where
-    V: ListItem + Clone,
+    V: ListItem + Clone + PartialEq,
 {
     model: ListModel<V>,
     state: ListState,
@@ -405,16 +402,17 @@ where
 
 impl<V> List<V>
 where
-    V: ListItem + Clone,
+    V: ListItem + Clone + PartialEq,
 {
-    pub fn new(items: &[V], theme: Theme) -> Self {
-        let mut model = ListModel::default();
-        for item in items {
-            model.push_item(item.clone());
-        }
+    pub fn new(items: &[V], selected: Option<V>, theme: Theme) -> Self {
+        let model = ListModel::new(items);
+        let selected = match selected {
+            Some(item) => items.iter().position(|i| i == &item),
+            None => Some(0),
+        };
 
         let mut state = ListState::default();
-        state.select(Some(0));
+        state.select(selected);
 
         Self {
             model,
@@ -450,7 +448,7 @@ where
 
 impl<V> WidgetComponent for List<V>
 where
-    V: ListItem + Clone,
+    V: ListItem + Clone + PartialEq,
 {
     fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
         use tuirealm::tui::widgets::List;

@@ -22,22 +22,23 @@ pub struct LargeList {
 }
 
 impl LargeList {
-    pub fn new(context: &Context, theme: &Theme) -> Self {
+    pub fn new(context: &Context, theme: &Theme, selected: Option<(IssueId, Issue)>) -> Self {
         let repo = context.repository();
-        let mut items = vec![];
 
-        if let Ok(issues) = cob::issue::all(repo) {
-            for (id, issue) in issues {
-                if let Ok(item) = IssueItem::try_from((context.profile(), repo, id, issue)) {
-                    items.push(item);
-                }
-            }
-        }
-
+        let mut items = match cob::issue::all(repo) {
+            Ok(issues) => issues
+                .into_iter()
+                .map(|(id, issue)| IssueItem::from((context.profile(), repo, id, issue)))
+                .collect(),
+            Err(_) => vec![],
+        };
         items.sort_by(|a, b| b.timestamp().cmp(a.timestamp()));
         items.sort_by(|a, b| a.state().cmp(b.state()));
 
-        let list = Widget::new(List::new(&items, theme.clone()))
+        let selected =
+            selected.map(|(id, issue)| IssueItem::from((context.profile(), repo, id, issue)));
+
+        let list = Widget::new(List::new(&items, selected, theme.clone()))
             .highlight(theme.colors.item_list_highlighted_bg);
 
         let container = common::labeled_container(theme, "Issues", list.to_boxed());
@@ -60,8 +61,8 @@ impl WidgetComponent for LargeList {
     }
 }
 
-pub fn list(context: &Context, theme: &Theme, _issue: (IssueId, &Issue)) -> Widget<LargeList> {
-    let list = LargeList::new(context, theme);
+pub fn list(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget<LargeList> {
+    let list = LargeList::new(context, theme, Some(issue));
     Widget::new(list)
 }
 
