@@ -150,8 +150,6 @@ pub fn details(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Wid
 }
 
 pub fn context(theme: &Theme, issue: (IssueId, &Issue), profile: &Profile) -> Widget<ContextBar> {
-    use crate::ui::cob;
-
     let (id, issue) = issue;
     let is_you = *issue.author().id() == profile.did();
 
