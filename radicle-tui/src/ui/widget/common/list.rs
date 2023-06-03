@@ -230,6 +230,45 @@ impl WidgetComponent for PropertyList {
     }
 }
 
+pub struct PropertyTable {
+    properties: Vec<(Widget<Label>, Widget<Label>)>,
+}
+
+impl PropertyTable {
+    pub fn new(properties: Vec<(Widget<Label>, Widget<Label>)>) -> Self {
+        Self { properties }
+    }
+}
+
+impl WidgetComponent for PropertyTable {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let display = properties
+            .get_or(Attribute::Display, AttrValue::Flag(true))
+            .unwrap_flag();
+
+        if display {
+            let properties = self
+                .properties
+                .iter()
+                .map(|property| property.clone().to_boxed() as Box<dyn MockComponent>)
+                .collect();
+
+            let layout = layout::v_stack(properties, area);
+            for (mut property, area) in layout {
+                property.view(frame, area);
+            }
+        }
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, _cmd: Cmd) -> CmdResult {
+        CmdResult::None
+    }
+}
+
 /// A table component that can display a list of [`TableItem`]s hold by a [`TableModel`].
 pub struct Table<V, const W: usize>
 where
