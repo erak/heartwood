@@ -1,3 +1,7 @@
+use std::cmp;
+use textwrap;
+
+use radicle::cob::thread::{Comment, CommentId};
 use radicle_surf;
 
 use cli::terminal::format;
@@ -13,13 +17,14 @@ use radicle::cob::patch::{Patch, PatchId, State as PatchState};
 use radicle::cob::{Tag, Timestamp};
 
 use tuirealm::props::{Color, Style};
+use tuirealm::tui::layout::Rect;
 use tuirealm::tui::text::{Span, Spans};
 use tuirealm::tui::widgets::Cell;
 
 use crate::ui::theme::Theme;
 use crate::ui::widget::common::list::TableItem;
 
-use super::widget::common::list::ListItem;
+use super::widget::common::list::{ListItem, TreeItem};
 
 /// An author item that can be used in tables, list or trees.
 ///
@@ -40,6 +45,127 @@ impl AuthorItem {
 
     pub fn is_you(&self) -> bool {
         self.is_you
+    }
+}
+
+/// A comment item that can be used in tables, list or trees.
+#[derive(Clone)]
+pub struct CommentItem {
+    /// Comment OID.
+    id: CommentId,
+    /// Author of this comment.
+    author: AuthorItem,
+    /// The content of this comment.
+    body: String,
+    /// Time when patch was opened.
+    timestamp: Timestamp,
+    /// Replies to this comment.
+    replies: Vec<CommentItem>,
+}
+
+impl From<(&Profile, Issue, CommentId, Comment)> for CommentItem {
+    fn from(value: (&Profile, Issue, CommentId, Comment)) -> Self {
+        let (profile, issue, id, comment) = value;
+        let thread = issue.thread();
+        let did = Did::from(comment.author());
+
+        CommentItem {
+            id,
+            author: AuthorItem {
+                did,
+                is_you: did == profile.did(),
+            },
+            body: comment.body().to_string(),
+            timestamp: comment.timestamp(),
+            replies: thread
+                .replies(&id)
+                .into_iter()
+                .map(|(reply_id, reply)| {
+                    CommentItem::from((profile, issue.clone(), *reply_id, reply.clone()))
+                })
+                .collect(),
+        }
+    }
+}
+
+impl TreeItem for CommentItem {
+    fn rows<'a>(
+        &'a self,
+        theme: &Theme,
+        area: Option<Rect>,
+        items: Option<usize>,
+        indent: u16,
+    ) -> Vec<tui_tree_widget::TreeItem<'a>> {
+        let area = area.unwrap_or_default();
+        let items_per_page = match items {
+            Some(items) => cmp::min(items, 6),
+            None => 1,
+        };
+        let available = area.height.saturating_sub(1) as usize;
+        let height =
+            cmp::min(available.saturating_div(items_per_page), available).saturating_sub(1);
+        let body = textwrap::wrap(&self.body, (area.width - indent) as usize);
+        let truncated = height < body.len();
+
+        let mut lines = vec![Spans::from(vec![
+            Span::styled(
+                format_author(&self.author.did, self.author.is_you),
+                Style::default().fg(theme.colors.browser_list_author),
+            ),
+            Span::styled(
+                format!(" {} ", theme.icons.property_divider),
+                Style::default().fg(theme.colors.property_divider_fg),
+            ),
+            Span::styled(
+                format::timestamp(&self.timestamp).to_string(),
+                Style::default().fg(theme.colors.browser_list_timestamp),
+            ),
+        ])];
+
+        lines.extend(
+            body.iter()
+                .take(height)
+                .map(|line| {
+                    Spans::from(vec![Span::styled(
+                        line.clone(),
+                        Style::default().fg(theme.colors.browser_comment_default_fg),
+                    )])
+                })
+                .collect::<Vec<_>>(),
+        );
+
+        if truncated {
+            lines.push(Spans::from(Span::styled(
+                "…",
+                Style::default().fg(theme.colors.browser_comment_default_fg),
+            )));
+            lines.push(Spans::from(Span::raw(String::new())));
+        } else {
+            let newlines = height - body.len();
+            lines.extend(
+                (0..newlines)
+                    .into_iter()
+                    .map(|_| Spans::from(String::new()))
+                    .collect::<Vec<_>>(),
+            );
+        }
+
+        let mut children = vec![];
+        for comment in &self.replies {
+            children.extend(comment.rows(theme, Some(area), items, indent + 2));
+        }
+
+        vec![tui_tree_widget::TreeItem::new(lines, children)]
+    }
+
+    fn has_children(&self) -> bool {
+        !self.replies.is_empty()
+    }
+}
+
+impl PartialEq for CommentItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }
 
