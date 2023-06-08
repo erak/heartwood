@@ -4,6 +4,8 @@ use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
 use tuirealm::tui::widgets::{Block, Cell, ListState, Row, TableState};
 use tuirealm::{Frame, MockComponent, State, StateValue};
 
+use tui_tree_widget::TreeState;
+
 use crate::ui::layout;
 use crate::ui::state::ItemState;
 use crate::ui::theme::Theme;
@@ -23,6 +25,22 @@ pub trait TableItem<const W: usize> {
 pub trait ListItem {
     /// Should return fields as list item.
     fn row(&self, theme: &Theme) -> tuirealm::tui::widgets::ListItem;
+}
+
+/// A generic item that can be displayed in a tree.
+pub trait TreeItem {
+    /// Should return this and its children as tree item(s), calculating
+    /// some optimal height based on given [`area`], [`items`] and [`indent`].
+    fn rows<'a>(
+        &'a self,
+        theme: &Theme,
+        area: Option<Rect>,
+        items: Option<usize>,
+        indent: u16,
+    ) -> Vec<tui_tree_widget::TreeItem<'a>>;
+
+    /// Should return true if this has children.
+    fn has_children(&self) -> bool;
 }
 
 /// Grow behavior of a table column.
@@ -357,6 +375,105 @@ where
                 Some(selected) => CmdResult::Submit(State::One(StateValue::Usize(selected))),
                 None => CmdResult::None,
             },
+            _ => CmdResult::None,
+        }
+    }
+}
+
+/// A tree component that can display [`TreeItem`]'s.
+pub struct Tree<V> {
+    /// Items held by this list.
+    items: Vec<V>,
+    /// State keeps track of the current selection.
+    state: TreeState,
+    /// Count of all comments, including replies.
+    count: usize,
+    /// The current theme.
+    theme: Theme,
+}
+
+impl<V> Tree<V>
+where
+    V: TreeItem + Clone + PartialEq,
+{
+    pub fn new(items: &[V], count: usize, expand: bool, theme: Theme) -> Self {
+        let mut state = TreeState::default();
+        if expand {
+            for (index, item) in items.iter().enumerate() {
+                if item.has_children() {
+                    state.open(vec![index]);
+                }
+            }
+        }
+
+        Self {
+            items: items.to_vec(),
+            state,
+            count,
+            theme,
+        }
+    }
+}
+
+impl<V> WidgetComponent for Tree<V>
+where
+    V: TreeItem + Clone + PartialEq,
+{
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        use tui_tree_widget::Tree;
+
+        let highlight = properties
+            .get_or(Attribute::HighlightedColor, AttrValue::Color(Color::Reset))
+            .unwrap_color();
+
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Min(1), Constraint::Length(1)])
+            .split(area);
+
+        let mut items = vec![];
+        for item in &self.items {
+            items.extend(item.rows(&self.theme, Some(layout[0]), Some(self.count), 4));
+        }
+
+        let tree = Tree::new(items)
+            .highlight_style(Style::default().bg(highlight))
+            .node_closed_symbol("🡒 ")
+            .node_open_symbol("🡓 ");
+        frame.render_stateful_widget(tree, layout[0], &mut self.state);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        use tuirealm::command::Direction;
+
+        let mut tree = vec![];
+        for item in &self.items {
+            tree.extend(item.rows(&self.theme, None, None, 0));
+        }
+
+        match cmd {
+            Cmd::Move(Direction::Up) => {
+                self.state.key_up(&tree);
+                CmdResult::None
+            }
+            Cmd::Move(Direction::Down) => {
+                self.state.key_down(&tree);
+                CmdResult::None
+            }
+            Cmd::Move(Direction::Left) => {
+                let selected = self.state.selected();
+                self.state.key_left();
+                self.state.select(selected);
+                CmdResult::None
+            }
+            Cmd::Move(Direction::Right) => {
+                self.state.key_right();
+                CmdResult::None
+            }
             _ => CmdResult::None,
         }
     }

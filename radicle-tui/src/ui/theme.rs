@@ -4,7 +4,7 @@ const COLOR_DEFAULT_FG: Color = Color::Rgb(200, 200, 200);
 const COLOR_DEFAULT_DARK_FG: Color = Color::Rgb(150, 150, 150);
 const COLOR_DEFAULT_DARK: Color = Color::Rgb(100, 100, 100);
 const COLOR_DEFAULT_DARKER: Color = Color::Rgb(70, 70, 70);
-const COLOR_DEFAULT_DARKEST: Color = Color::Rgb(40, 40, 40);
+const COLOR_DEFAULT_DARKEST: Color = Color::Rgb(50, 50, 50);
 const COLOR_DEFAULT_FAINT: Color = Color::Rgb(20, 20, 20);
 
 #[derive(Debug, Clone)]
@@ -14,6 +14,7 @@ pub struct Colors {
     pub workspaces_info_fg: Color,
     pub labeled_container_bg: Color,
     pub item_list_highlighted_bg: Color,
+    pub tree_highlighted_fg: Color,
     pub property_name_fg: Color,
     pub property_divider_fg: Color,
     pub shortcut_short_fg: Color,
@@ -29,6 +30,7 @@ pub struct Colors {
     pub browser_patch_list_head: Color,
     pub browser_patch_list_added: Color,
     pub browser_patch_list_removed: Color,
+    pub browser_comment_default_fg: Color,
     pub context_bg: Color,
     pub context_light_bg: Color,
     pub context_badge_bg: Color,
@@ -81,7 +83,8 @@ pub fn default_dark() -> Theme {
             tabs_highlighted_fg: Color::Magenta,
             workspaces_info_fg: Color::Yellow,
             labeled_container_bg: COLOR_DEFAULT_FAINT,
-            item_list_highlighted_bg: COLOR_DEFAULT_DARKER,
+            item_list_highlighted_bg: COLOR_DEFAULT_DARKEST,
+            tree_highlighted_fg: Color::Cyan,
             property_name_fg: Color::Cyan,
             property_divider_fg: COLOR_DEFAULT_DARK,
             shortcut_short_fg: COLOR_DEFAULT_DARK,
@@ -97,6 +100,7 @@ pub fn default_dark() -> Theme {
             browser_patch_list_head: Color::LightBlue,
             browser_patch_list_added: Color::Green,
             browser_patch_list_removed: Color::Red,
+            browser_comment_default_fg: COLOR_DEFAULT_FG,
             context_bg: COLOR_DEFAULT_DARKEST,
             context_light_bg: Color::Gray,
             context_badge_bg: Color::LightRed,
