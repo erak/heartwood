@@ -9,9 +9,11 @@ use super::common::container::Container;
 use super::common::container::LabeledContainer;
 use super::common::list::List;
 use super::common::list::Property;
+use super::common::list::Tree;
 use super::Widget;
 
 use crate::ui::cob;
+use crate::ui::cob::CommentItem;
 use crate::ui::cob::IssueItem;
 use crate::ui::context::Context;
 use crate::ui::theme::Theme;
@@ -108,7 +110,6 @@ impl Details {
             common::label(&item.state().to_string()).foreground(theme.colors.browser_list_title),
         );
 
-        // let table = common::property_table(theme, vec![title, tags, assignees, state]);
         let table = common::property_table(
             theme,
             vec![
@@ -138,6 +139,54 @@ impl WidgetComponent for Details {
     }
 }
 
+pub struct Discussion {
+    /// First level items in comment tree.
+    items: Vec<CommentItem>,
+    /// Container widget with borders.
+    tree: Widget<Container>,
+}
+
+impl Discussion {
+    pub fn new(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Self {
+        let (_, issue) = issue;
+        let count = issue.comments().count();
+        let items = issue
+            .comments()
+            .filter(|(_, comment)| comment.reply_to().is_none())
+            .into_iter()
+            .map(|(id, comment)| {
+                CommentItem::from((context.profile(), issue.clone(), *id, comment.clone()))
+            })
+            .collect::<Vec<_>>();
+
+        let tree = Widget::new(Tree::new(&items, count, true, theme.clone()))
+            .highlight(theme.colors.item_list_highlighted_bg);
+
+        Self {
+            items,
+            tree: common::container(theme, tree.to_boxed()),
+        }
+    }
+
+    pub fn items(&self) -> &Vec<CommentItem> {
+        &self.items
+    }
+}
+
+impl WidgetComponent for Discussion {
+    fn view(&mut self, _properties: &Props, frame: &mut Frame, area: Rect) {
+        self.tree.view(frame, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.tree.perform(cmd)
+    }
+}
+
 pub fn list(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget<LargeList> {
     let list = LargeList::new(context, theme, Some(issue));
 
@@ -147,6 +196,11 @@ pub fn list(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget
 pub fn details(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget<Details> {
     let details = Details::new(context, theme, issue);
     Widget::new(details)
+}
+
+pub fn discussion(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget<Discussion> {
+    let comments = Discussion::new(context, theme, issue);
+    Widget::new(comments)
 }
 
 pub fn context(theme: &Theme, issue: (IssueId, &Issue), profile: &Profile) -> Widget<ContextBar> {
