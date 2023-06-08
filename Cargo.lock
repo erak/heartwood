@@ -2197,6 +2197,7 @@ dependencies = [
  "radicle-term",
  "timeago 0.4.1",
  "tui-realm-stdlib",
+ "tui-tree-widget",
  "tuirealm",
 ]
 
@@ -3119,6 +3120,16 @@ checksum = "66f252bf8b07c6fd708ddd6349b5f044ae5b488b26929c745728d9c7e2cebfa6"
 dependencies = [
  "textwrap",
  "tuirealm",
+ "unicode-width",
+]
+
+[[package]]
+name = "tui-tree-widget"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af6ca306e86e263aa6dede6305d7d305dea942bde622d4f4910782434d0b98cb"
+dependencies = [
+ "tui",
  "unicode-width",
 ]
 
