@@ -40,6 +40,7 @@ pub enum PatchCid {
 pub enum IssueCid {
     List,
     Details,
+    Discussion,
     Shortcuts,
 }
 

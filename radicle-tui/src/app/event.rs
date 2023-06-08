@@ -84,6 +84,36 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Details> {
     }
 }
 
+impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Discussion> {
+    fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
+        match event {
+            Event::Keyboard(KeyEvent { code: Key::Up, .. }) => {
+                self.perform(Cmd::Move(MoveDirection::Up));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Down, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Down));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Left, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Left));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Right, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Right));
+                Some(Message::Tick)
+            }
+            _ => None,
+        }
+    }
+}
+
 impl tuirealm::Component<Message, NoUserEvent> for Widget<PatchBrowser> {
     fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
         match event {
