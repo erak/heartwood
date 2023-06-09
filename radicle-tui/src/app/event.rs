@@ -73,6 +73,9 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::LargeList> {
                     _ => None,
                 }
             }
+            Event::Keyboard(KeyEvent {
+                code: Key::Enter, ..
+            }) => Some(Message::Issue(IssueMessage::FocusDiscussion)),
             _ => None,
         }
     }
@@ -108,6 +111,9 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Discussion> {
             }) => {
                 self.perform(Cmd::Move(MoveDirection::Right));
                 Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
+                Some(Message::Issue(IssueMessage::FocusList))
             }
             _ => None,
         }
