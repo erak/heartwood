@@ -110,8 +110,8 @@ impl ViewPage for HomeView {
     ) -> Result<()> {
         if let Message::NavigationChanged(index) = message {
             self.active_component = Cid::Home(HomeCid::from(index as usize));
+            app.active(&self.active_component)?;
         }
-        app.active(&self.active_component)?;
 
         Ok(())
     }
@@ -147,16 +147,12 @@ impl ViewPage for HomeView {
 /// Issue detail page
 ///
 pub struct IssuePage {
-    active_component: Cid,
     issue: (IssueId, Issue),
 }
 
 impl IssuePage {
     pub fn new(issue: (IssueId, Issue)) -> Self {
-        IssuePage {
-            active_component: Cid::Issue(IssueCid::List),
-            issue,
-        }
+        IssuePage { issue }
     }
 }
 
@@ -185,7 +181,7 @@ impl ViewPage for IssuePage {
         app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
         app.remount(Cid::Issue(IssueCid::Shortcuts), shortcuts, vec![])?;
 
-        app.active(&self.active_component)?;
+        app.active(&Cid::Issue(IssueCid::List))?;
 
         Ok(())
     }
@@ -205,18 +201,27 @@ impl ViewPage for IssuePage {
         theme: &Theme,
         message: Message,
     ) -> Result<()> {
-        if let Message::Issue(IssueMessage::Changed(id)) = message {
-            let repo = context.repository();
-            if let Some(issue) = cob::issue::find(repo, &id)? {
-                let details =
-                    widget::issue::details(context, theme, (id, issue.clone())).to_boxed();
-                app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
+        match message {
+            Message::Issue(IssueMessage::Changed(id)) => {
+                let repo = context.repository();
+                if let Some(issue) = cob::issue::find(repo, &id)? {
+                    let details =
+                        widget::issue::details(context, theme, (id, issue.clone())).to_boxed();
+                    app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
 
-                let discussion = widget::issue::discussion(context, theme, (id, issue)).to_boxed();
-                app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
+                    let discussion =
+                        widget::issue::discussion(context, theme, (id, issue)).to_boxed();
+                    app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
+                }
             }
+            Message::Issue(IssueMessage::FocusList) => {
+                app.active(&Cid::Issue(IssueCid::List))?;
+            }
+            Message::Issue(IssueMessage::FocusDiscussion) => {
+                app.active(&Cid::Issue(IssueCid::Discussion))?;
+            }
+            _ => {}
         }
-        app.active(&self.active_component)?;
 
         Ok(())
     }

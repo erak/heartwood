@@ -58,7 +58,12 @@ impl LargeList {
 }
 
 impl WidgetComponent for LargeList {
-    fn view(&mut self, _properties: &Props, frame: &mut Frame, area: Rect) {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.list.attr(Attribute::Focus, AttrValue::Flag(focus));
         self.list.view(frame, area);
     }
 
@@ -174,7 +179,12 @@ impl Discussion {
 }
 
 impl WidgetComponent for Discussion {
-    fn view(&mut self, _properties: &Props, frame: &mut Frame, area: Rect) {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.tree.attr(Attribute::Focus, AttrValue::Flag(focus));
         self.tree.view(frame, area);
     }
 

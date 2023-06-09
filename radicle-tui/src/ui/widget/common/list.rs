@@ -243,6 +243,16 @@ where
             .get_or(Attribute::HighlightedColor, AttrValue::Color(Color::Reset))
             .unwrap_color();
 
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        let color = if focus {
+            self.theme.colors.container_border_focus_fg
+        } else {
+            self.theme.colors.container_border_fg
+        };
+
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Length(3), Constraint::Min(1)])
@@ -259,7 +269,7 @@ where
             .block(
                 Block::default()
                     .borders(BorderSides::BOTTOM | BorderSides::LEFT | BorderSides::RIGHT)
-                    .border_style(Style::default().fg(Color::Rgb(48, 48, 48)))
+                    .border_style(Style::default().fg(color))
                     .border_type(BorderType::Rounded),
             )
             .highlight_style(Style::default().bg(highlight))
@@ -271,7 +281,10 @@ where
             self.widths,
             self.theme.clone(),
         ));
+
+        header.attr(Attribute::Focus, AttrValue::Flag(focus));
         header.view(frame, layout[0]);
+
         frame.render_stateful_widget(table, layout[1], &mut TableState::from(&self.state));
     }
 
