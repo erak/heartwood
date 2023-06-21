@@ -1,10 +1,13 @@
 use tuirealm::command::{Cmd, CmdResult};
-use tuirealm::props::{AttrValue, Attribute, BorderSides, BorderType, Color, Props, Style};
+use tuirealm::props::{
+    Alignment, AttrValue, Attribute, BorderSides, BorderType, Color, Props, Style,
+};
 use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
-use tuirealm::tui::widgets::{Block, Cell, ListState, Row, TableState};
+use tuirealm::tui::text::{Span, Spans, Text};
+use tuirealm::tui::widgets::{Block, Cell, ListState, Paragraph, Row, TableState};
 use tuirealm::{Frame, MockComponent, State, StateValue};
 
-use tui_tree_widget::TreeState;
+use tui_tree_widget::{MultilineTree, TreeState};
 
 use crate::ui::layout;
 use crate::ui::state::ItemState;
@@ -30,13 +33,12 @@ pub trait ListItem {
 /// A generic item that can be displayed in a tree.
 pub trait TreeItem {
     /// Should return this and its children as tree item(s), calculating
-    /// some optimal height based on given [`area`], [`items`] and [`indent`].
+    /// some optimal height based on given [`area`] and [`items`].
     fn rows<'a>(
         &'a self,
         theme: &Theme,
         area: Option<Rect>,
         items: Option<usize>,
-        indent: u16,
     ) -> Vec<tui_tree_widget::TreeItem<'a>>;
 
     /// Should return true if this has children.
@@ -401,6 +403,8 @@ pub struct Tree<V> {
     state: TreeState,
     /// Count of all comments, including replies.
     count: usize,
+    /// Current position in the full list.
+    position: usize,
     /// The current theme.
     theme: Theme,
 }
@@ -418,11 +422,13 @@ where
                 }
             }
         }
+        state.select_first();
 
         Self {
             items: items.to_vec(),
             state,
             count,
+            position: 1,
             theme,
         }
     }
@@ -433,12 +439,9 @@ where
     V: TreeItem + Clone + PartialEq,
 {
     fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
-        use tui_tree_widget::Tree;
-
-        let highlight = properties
-            .get_or(Attribute::HighlightedColor, AttrValue::Color(Color::Reset))
-            .unwrap_color();
-
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Min(1), Constraint::Length(1)])
@@ -446,13 +449,41 @@ where
 
         let mut items = vec![];
         for item in &self.items {
-            items.extend(item.rows(&self.theme, Some(layout[0]), Some(self.count), 4));
+            items.extend(item.rows(&self.theme, Some(layout[0]), Some(self.count)));
         }
 
-        let tree = Tree::new(items)
-            .highlight_style(Style::default().bg(highlight))
-            .node_closed_symbol("🡒 ")
-            .node_open_symbol("🡓 ");
+        let highlight_color = if focus {
+            self.theme.colors.container_border_focus_fg
+        } else {
+            self.theme.colors.container_border_fg
+        };
+
+        let tree = MultilineTree::new(items)
+            .item_block(
+                Block::default()
+                    .borders(BorderSides::ALL)
+                    .border_style(Style::default().fg(self.theme.colors.container_border_fg))
+                    .border_type(BorderType::Rounded),
+            )
+            .item_block_highlight(
+                Block::default()
+                    .borders(BorderSides::ALL)
+                    .border_style(Style::default().fg(highlight_color))
+                    .border_type(BorderType::Rounded),
+            )
+            .node_closed_symbol("🞂 ")
+            .node_open_symbol("🞃 ");
+
+        if focus {
+            let pager = Paragraph::new(Text::from(Spans::from(Span::styled(
+                format!("{} / {}", self.position, self.count),
+                Style::default().fg(highlight_color),
+            ))))
+            .alignment(Alignment::Right);
+
+            frame.render_widget(pager, layout[1]);
+        }
+
         frame.render_stateful_widget(tree, layout[0], &mut self.state);
     }
 
@@ -465,15 +496,17 @@ where
 
         let mut tree = vec![];
         for item in &self.items {
-            tree.extend(item.rows(&self.theme, None, None, 0));
+            tree.extend(item.rows(&self.theme, None, None));
         }
 
         match cmd {
             Cmd::Move(Direction::Up) => {
+                self.position = std::cmp::max(self.position.saturating_sub(1), 1);
                 self.state.key_up(&tree);
                 CmdResult::None
             }
             Cmd::Move(Direction::Down) => {
+                self.position = std::cmp::min(self.position.saturating_add(1), self.count);
                 self.state.key_down(&tree);
                 CmdResult::None
             }

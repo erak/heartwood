@@ -49,6 +49,10 @@ impl Reaction {
         }
         Ok(Self { emoji })
     }
+
+    pub fn emoji(&self) -> char {
+        self.emoji
+    }
 }
 
 impl<'de> Deserialize<'de> for Reaction {

@@ -147,8 +147,8 @@ impl WidgetComponent for Details {
 pub struct Discussion {
     /// First level items in comment tree.
     items: Vec<CommentItem>,
-    /// Container widget with borders.
-    tree: Widget<Container>,
+    /// Tree widget without borders.
+    tree: Widget<Tree<CommentItem>>,
 }
 
 impl Discussion {
@@ -158,7 +158,6 @@ impl Discussion {
         let items = issue
             .comments()
             .filter(|(_, comment)| comment.reply_to().is_none())
-            .into_iter()
             .map(|(id, comment)| {
                 CommentItem::from((context.profile(), issue.clone(), *id, comment.clone()))
             })
@@ -167,10 +166,7 @@ impl Discussion {
         let tree = Widget::new(Tree::new(&items, count, true, theme.clone()))
             .highlight(theme.colors.item_list_highlighted_bg);
 
-        Self {
-            items,
-            tree: common::container(theme, tree.to_boxed()),
-        }
+        Self { items, tree }
     }
 
     pub fn items(&self) -> &Vec<CommentItem> {

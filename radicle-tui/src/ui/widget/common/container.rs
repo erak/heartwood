@@ -217,6 +217,9 @@ impl WidgetComponent for Container {
         let display = properties
             .get_or(Attribute::Display, AttrValue::Flag(true))
             .unwrap_flag();
+        let show_border = properties
+            .get_or(Attribute::Custom("show_border"), AttrValue::Flag(true))
+            .unwrap_flag();
         let focus = properties
             .get_or(Attribute::Focus, AttrValue::Flag(false))
             .unwrap_flag();
@@ -238,11 +241,13 @@ impl WidgetComponent for Container {
             // reverse draw order: child needs to be drawn first?
             self.component.view(frame, layout[1]);
 
-            let block = Block::default()
-                .borders(BorderSides::ALL)
-                .border_style(Style::default().fg(color))
-                .border_type(BorderType::Rounded);
-            frame.render_widget(block, area);
+            if show_border {
+                let block = Block::default()
+                    .borders(BorderSides::ALL)
+                    .border_style(Style::default().fg(color))
+                    .border_type(BorderType::Rounded);
+                frame.render_widget(block, area);
+            }
         }
     }
 
