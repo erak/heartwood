@@ -1,5 +1,4 @@
 use std::cmp;
-use textwrap;
 
 use radicle::cob::thread::{Comment, CommentId};
 use radicle_surf;
@@ -17,8 +16,8 @@ use radicle::cob::patch::{Patch, PatchId, State as PatchState};
 use radicle::cob::{Tag, Timestamp};
 
 use tuirealm::props::{Color, Style};
-use tuirealm::tui::layout::Rect;
-use tuirealm::tui::text::{Span, Spans};
+use tuirealm::tui::layout::{Constraint, Rect};
+use tuirealm::tui::text::{Span, Spans, Text};
 use tuirealm::tui::widgets::Cell;
 
 use crate::ui::theme::Theme;
@@ -79,7 +78,6 @@ impl From<(&Profile, Issue, CommentId, Comment)> for CommentItem {
             timestamp: comment.timestamp(),
             replies: thread
                 .replies(&id)
-                .into_iter()
                 .map(|(reply_id, reply)| {
                     CommentItem::from((profile, issue.clone(), *reply_id, reply.clone()))
                 })
@@ -94,7 +92,6 @@ impl TreeItem for CommentItem {
         theme: &Theme,
         area: Option<Rect>,
         items: Option<usize>,
-        indent: u16,
     ) -> Vec<tui_tree_widget::TreeItem<'a>> {
         let area = area.unwrap_or_default();
         let items_per_page = match items {
@@ -103,11 +100,11 @@ impl TreeItem for CommentItem {
         };
         let available = area.height.saturating_sub(1) as usize;
         let height =
-            cmp::min(available.saturating_div(items_per_page), available).saturating_sub(1);
-        let body = textwrap::wrap(&self.body, (area.width - indent) as usize);
-        let truncated = height < body.len();
+            cmp::min(available.saturating_div(items_per_page), available).saturating_sub(3);
 
-        let mut lines = vec![Spans::from(vec![
+        let heights = vec![Constraint::Length(1), Constraint::Length(height as u16)];
+
+        let meta = Spans::from(vec![
             Span::styled(
                 format_author(&self.author.did, self.author.is_you),
                 Style::default().fg(theme.colors.browser_list_author),
@@ -120,42 +117,37 @@ impl TreeItem for CommentItem {
                 format::timestamp(&self.timestamp).to_string(),
                 Style::default().fg(theme.colors.browser_list_timestamp),
             ),
-        ])];
+            Span::styled(
+                format!(" {} ", theme.icons.property_divider),
+                Style::default().fg(theme.colors.property_divider_fg),
+            ),
+            Span::styled(
+                format!(
+                    "{} {}",
+                    self.replies.len(),
+                    if self.replies.len() == 1_usize {
+                        "reply"
+                    } else {
+                        "replies"
+                    }
+                ),
+                Style::default().fg(theme.colors.browser_list_comments),
+            ),
+        ]);
 
-        lines.extend(
-            body.iter()
-                .take(height)
-                .map(|line| {
-                    Spans::from(vec![Span::styled(
-                        line.clone(),
-                        Style::default().fg(theme.colors.browser_comment_default_fg),
-                    )])
-                })
-                .collect::<Vec<_>>(),
-        );
-
-        if truncated {
-            lines.push(Spans::from(Span::styled(
-                "…",
-                Style::default().fg(theme.colors.browser_comment_default_fg),
-            )));
-            lines.push(Spans::from(Span::raw(String::new())));
-        } else {
-            let newlines = height - body.len();
-            lines.extend(
-                (0..newlines)
-                    .into_iter()
-                    .map(|_| Spans::from(String::new()))
-                    .collect::<Vec<_>>(),
-            );
-        }
+        let body = Text::from(Spans::from(Span::styled(
+            self.body.clone(),
+            Style::default().fg(theme.colors.default_fg),
+        )));
 
         let mut children = vec![];
         for comment in &self.replies {
-            children.extend(comment.rows(theme, Some(area), items, indent + 2));
+            children.extend(comment.rows(theme, Some(area), items));
         }
 
-        vec![tui_tree_widget::TreeItem::new(lines, children)]
+        vec![tui_tree_widget::TreeItem::new(meta, children)
+            .paragraph(body)
+            .heights(&heights)]
     }
 
     fn has_children(&self) -> bool {

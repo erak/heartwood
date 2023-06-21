@@ -1,6 +1,7 @@
 use tuirealm::props::Color;
 
 const COLOR_DEFAULT_FG: Color = Color::Rgb(200, 200, 200);
+#[allow(dead_code)]
 const COLOR_DEFAULT_DARK_FG: Color = Color::Rgb(150, 150, 150);
 const COLOR_DEFAULT_DARK: Color = Color::Rgb(100, 100, 100);
 const COLOR_DEFAULT_DARKER: Color = Color::Rgb(70, 70, 70);
@@ -97,7 +98,7 @@ pub fn default_dark() -> Theme {
             browser_list_description: COLOR_DEFAULT_DARK,
             browser_list_author: Color::Gray,
             browser_list_tags: Color::LightBlue,
-            browser_list_comments: COLOR_DEFAULT_DARK_FG,
+            browser_list_comments: COLOR_DEFAULT_DARKER,
             browser_list_timestamp: COLOR_DEFAULT_DARK,
             browser_patch_list_head: Color::LightBlue,
             browser_patch_list_added: Color::Green,
