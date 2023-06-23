@@ -6,6 +6,7 @@ use anyhow::Result;
 
 use radicle::cob::issue::IssueId;
 use radicle::cob::patch::PatchId;
+use radicle::cob::thread::CommentId;
 use radicle::identity::{Id, Project};
 use radicle::profile::Profile;
 
@@ -19,7 +20,7 @@ use radicle_tui::{cob, ui};
 
 use page::{HomeView, PatchView};
 
-use self::page::{IssuePage, PageStack};
+use self::page::{CommentPage, IssuePage, PageStack};
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum HomeCid {
@@ -44,11 +45,19 @@ pub enum IssueCid {
     Shortcuts,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+pub enum CommentCid {
+    Details,
+    Discussion,
+    Shortcuts,
+}
+
 /// All component ids known to this application.
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum Cid {
     Home(HomeCid),
     Issue(IssueCid),
+    Comment(CommentCid),
     Patch(PatchCid),
     GlobalListener,
 }
@@ -73,9 +82,16 @@ pub enum PatchMessage {
 }
 
 #[derive(Debug, Eq, PartialEq)]
+pub enum CommentMessage {
+    Show(IssueId, CommentId),
+    Leave,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum Message {
     Home(HomeMessage),
     Issue(IssueMessage),
+    Comment(CommentMessage),
     Patch(PatchMessage),
     NavigationChanged(u16),
     Tick,
@@ -152,6 +168,29 @@ impl App {
             ))
         }
     }
+
+    fn view_comment(
+        &mut self,
+        app: &mut Application<Cid, Message, NoUserEvent>,
+        issue_id: IssueId,
+        comment_id: CommentId,
+        theme: &Theme,
+    ) -> Result<()> {
+        let repo = self.context.repository();
+
+        if let Some(issue) = cob::issue::find(repo, &issue_id)? {
+            let comment = issue.comments().find(|(id, _)| *id == &comment_id);
+            let comment = comment.map(|(id, comment)| (*id, comment.clone()));
+            let view = Box::new(CommentPage::new((issue_id, issue), comment));
+            self.pages.push(view, app, &self.context, theme)?;
+
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "Could not mount 'page::DiscussionPage'. Issue not found."
+            ))
+        }
+    }
 }
 
 impl Tui<Cid, Message> for App {
@@ -181,6 +220,12 @@ impl Tui<Cid, Message> for App {
                             self.view_issue(app, id, &theme)?;
                         }
                         Message::Issue(IssueMessage::Leave) => {
+                            self.pages.pop(app)?;
+                        }
+                        Message::Comment(CommentMessage::Show(issue_id, comment_id)) => {
+                            self.view_comment(app, issue_id, comment_id, &theme)?;
+                        }
+                        Message::Comment(CommentMessage::Leave) => {
                             self.pages.pop(app)?;
                         }
                         Message::Patch(PatchMessage::Show(id)) => {

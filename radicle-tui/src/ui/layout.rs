@@ -2,10 +2,18 @@ use tuirealm::props::{AttrValue, Attribute};
 use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
 use tuirealm::MockComponent;
 
-pub struct IssuePreview {
-    pub left: Rect,
+pub struct IssuePage {
+    pub list: Rect,
     pub details: Rect,
     pub discussion: Rect,
+    pub shortcuts: Rect,
+}
+
+pub struct CommentPage {
+    pub details: Rect,
+    pub discussion: Rect,
+    pub comment: Rect,
+    pub editor: Rect,
     pub shortcuts: Rect,
 }
 
@@ -139,7 +147,7 @@ pub fn centered_label(label_w: u16, area: Rect) -> Rect {
         .split(layout[1])[1]
 }
 
-pub fn issue_preview(area: Rect, shortcuts_h: u16) -> IssuePreview {
+pub fn issue_page(area: Rect, shortcuts_h: u16) -> IssuePage {
     let content_h = area.height.saturating_sub(shortcuts_h);
 
     let root = Layout::default()
@@ -164,10 +172,49 @@ pub fn issue_preview(area: Rect, shortcuts_h: u16) -> IssuePreview {
         .constraints([Constraint::Length(6), Constraint::Min(0)].as_ref())
         .split(split[1]);
 
-    IssuePreview {
-        left: split[0],
+    IssuePage {
+        list: split[0],
         details: right[0],
         discussion: right[1],
+        shortcuts: root[1],
+    }
+}
+
+pub fn comment_page(area: Rect, shortcuts_h: u16) -> CommentPage {
+    let content_h = area.height.saturating_sub(shortcuts_h);
+
+    let root = Layout::default()
+        .direction(Direction::Vertical)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Length(content_h),
+                Constraint::Length(shortcuts_h),
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    let split = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .split(root[0]);
+
+    let left = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(6), Constraint::Min(0)].as_ref())
+        .split(split[0]);
+
+    let right = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .split(split[1]);
+
+    CommentPage {
+        details: left[0],
+        discussion: left[1],
+        comment: right[0],
+        editor: right[1],
         shortcuts: root[1],
     }
 }

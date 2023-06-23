@@ -10,7 +10,7 @@ use radicle_tui::ui::widget::{issue, patch};
 
 use radicle_tui::ui::widget::Widget;
 
-use super::{IssueMessage, Message, PatchMessage};
+use super::{CommentMessage, IssueMessage, Message, PatchMessage};
 
 /// Since the framework does not know the type of messages that are being
 /// passed around in the app, the following handlers need to be implemented for
@@ -87,7 +87,7 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Details> {
     }
 }
 
-impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Discussion> {
+impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::IssueDiscussion> {
     fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
         match event {
             Event::Keyboard(KeyEvent { code: Key::Up, .. }) => {
@@ -114,6 +114,55 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::Discussion> {
             }
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
                 Some(Message::Issue(IssueMessage::FocusList))
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Enter, ..
+            }) => {
+                let result = self.perform(Cmd::Submit);
+                match result {
+                    CmdResult::Submit(State::One(StateValue::Usize(selected))) => {
+                        let comment = self.comments().get(selected)?;
+                        let (issue_id, _) = self.issue();
+                        Some(Message::Comment(CommentMessage::Show(
+                            *issue_id,
+                            *comment.id(),
+                        )))
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
+impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentDiscussion> {
+    fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
+        match event {
+            Event::Keyboard(KeyEvent { code: Key::Up, .. }) => {
+                self.perform(Cmd::Move(MoveDirection::Up));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Down, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Down));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Left, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Left));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
+                code: Key::Right, ..
+            }) => {
+                self.perform(Cmd::Move(MoveDirection::Right));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
+                Some(Message::Comment(CommentMessage::Leave))
             }
             _ => None,
         }

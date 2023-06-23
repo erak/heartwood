@@ -7,7 +7,7 @@ use tuirealm::tui::text::{Span, Spans, Text};
 use tuirealm::tui::widgets::{Block, Cell, ListState, Paragraph, Row, TableState};
 use tuirealm::{Frame, MockComponent, State, StateValue};
 
-use tui_tree_widget::{MultilineTree, TreeState};
+use tui_tree_widget::{MultilineTree, TreeIdentifierVec, TreeState};
 
 use crate::ui::layout;
 use crate::ui::state::ItemState;
@@ -413,7 +413,13 @@ impl<V> Tree<V>
 where
     V: TreeItem + Clone + PartialEq,
 {
-    pub fn new(items: &[V], count: usize, expand: bool, theme: Theme) -> Self {
+    pub fn new(
+        items: &[V],
+        selected: Option<TreeIdentifierVec>,
+        count: usize,
+        expand: bool,
+        theme: Theme,
+    ) -> Self {
         let mut state = TreeState::default();
         if expand {
             for (index, item) in items.iter().enumerate() {
@@ -422,7 +428,11 @@ where
                 }
             }
         }
-        state.select_first();
+
+        match selected {
+            Some(identifier) => state.select(identifier),
+            _ => state.select_first(),
+        }
 
         Self {
             items: items.to_vec(),
@@ -519,6 +529,15 @@ where
             Cmd::Move(Direction::Right) => {
                 self.state.key_right();
                 CmdResult::None
+            }
+            Cmd::Submit => {
+                let values = self
+                    .state
+                    .selected()
+                    .iter()
+                    .map(|id| StateValue::Usize(*id))
+                    .collect();
+                CmdResult::Submit(State::Vec(values))
             }
             _ => CmdResult::None,
         }

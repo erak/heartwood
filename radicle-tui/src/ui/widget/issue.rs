@@ -1,9 +1,13 @@
+use radicle::cob::thread::Comment;
+use radicle::cob::thread::CommentId;
 use radicle_cli::terminal::format;
 
 use radicle::cob::issue::Issue;
 use radicle::cob::issue::IssueId;
 use radicle::Profile;
+use tui_tree_widget::TreeIdentifierVec;
 use tuirealm::props::Color;
+use tuirealm::StateValue;
 
 use super::common::container::Container;
 use super::common::container::LabeledContainer;
@@ -145,17 +149,30 @@ impl WidgetComponent for Details {
 }
 
 pub struct Discussion {
+    /// All comments
+    all: Vec<CommentItem>,
     /// First level items in comment tree.
-    items: Vec<CommentItem>,
+    root: Vec<CommentItem>,
     /// Tree widget without borders.
     tree: Widget<Tree<CommentItem>>,
 }
 
 impl Discussion {
-    pub fn new(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Self {
+    pub fn new(
+        context: &Context,
+        theme: &Theme,
+        issue: (IssueId, Issue),
+        selected: Option<(CommentId, Comment)>,
+    ) -> Self {
         let (_, issue) = issue;
         let count = issue.comments().count();
-        let items = issue
+        let all = issue
+            .comments()
+            .map(|(id, comment)| {
+                CommentItem::from((context.profile(), issue.clone(), *id, comment.clone()))
+            })
+            .collect::<Vec<_>>();
+        let root = issue
             .comments()
             .filter(|(_, comment)| comment.reply_to().is_none())
             .map(|(id, comment)| {
@@ -163,14 +180,44 @@ impl Discussion {
             })
             .collect::<Vec<_>>();
 
-        let tree = Widget::new(Tree::new(&items, count, true, theme.clone()))
+        let selected = selected.map(|(id, comment)| {
+            CommentItem::from((context.profile(), issue.clone(), id, comment))
+        });
+        let selected = selected
+            .as_ref()
+            .map(|selected| Self::get_identifier(&root, selected, vec![]));
+
+        let tree = Widget::new(Tree::new(&root, selected, count, true, theme.clone()))
             .highlight(theme.colors.item_list_highlighted_bg);
 
-        Self { items, tree }
+        Self { all, root, tree }
     }
 
     pub fn items(&self) -> &Vec<CommentItem> {
-        &self.items
+        &self.all
+    }
+
+    fn get_identifier(
+        items: &[CommentItem],
+        selected: &CommentItem,
+        parents: TreeIdentifierVec,
+    ) -> TreeIdentifierVec {
+        let mut identifier = vec![];
+
+        for (i, item) in items.iter().enumerate() {
+            if item == selected {
+                identifier.extend(parents);
+                identifier.push(i);
+
+                break;
+            } else if !item.replies().is_empty() {
+                let mut parents = parents.clone();
+
+                parents.push(i);
+                identifier.extend(Self::get_identifier(item.replies(), selected, parents));
+            }
+        }
+        identifier
     }
 }
 
@@ -189,7 +236,119 @@ impl WidgetComponent for Discussion {
     }
 
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
-        self.tree.perform(cmd)
+        let result = self.tree.perform(cmd);
+        match result {
+            CmdResult::Submit(State::Vec(identifiers)) => {
+                let identifiers = identifiers
+                    .into_iter()
+                    .map(|value| value.unwrap_usize())
+                    .collect::<Vec<_>>();
+
+                let mut iter = identifiers.iter();
+                let mut comment = self.root.get(*iter.next().unwrap_or(&0));
+                for id in iter {
+                    comment = comment.unwrap().replies().get(*id);
+                }
+
+                let position = match comment {
+                    Some(comment) => self.all.iter().position(|c| *c == *comment).unwrap_or(0),
+                    _ => 0,
+                };
+
+                CmdResult::Submit(State::One(StateValue::Usize(position)))
+            }
+            _ => result,
+        }
+    }
+}
+
+pub struct IssueDiscussion {
+    discussion: Widget<Discussion>,
+    issue: (IssueId, Issue),
+}
+
+impl IssueDiscussion {
+    pub fn new(
+        context: &Context,
+        theme: &Theme,
+        issue: (IssueId, Issue),
+        selected: Option<(CommentId, Comment)>,
+    ) -> Self {
+        let discussion = Discussion::new(context, theme, issue.clone(), selected);
+
+        Self {
+            discussion: Widget::new(discussion),
+            issue,
+        }
+    }
+
+    pub fn comments(&self) -> &Vec<CommentItem> {
+        self.discussion.items()
+    }
+
+    pub fn issue(&self) -> &(IssueId, Issue) {
+        &self.issue
+    }
+}
+
+impl WidgetComponent for IssueDiscussion {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.discussion.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.discussion.view(frame, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.discussion.perform(cmd)
+    }
+}
+
+pub struct CommentDiscussion {
+    discussion: Widget<Discussion>,
+}
+
+impl CommentDiscussion {
+    pub fn new(
+        context: &Context,
+        theme: &Theme,
+        issue: (IssueId, Issue),
+        selected: Option<(CommentId, Comment)>,
+    ) -> Self {
+        let discussion = Discussion::new(context, theme, issue, selected);
+
+        Self {
+            discussion: Widget::new(discussion),
+        }
+    }
+
+    pub fn comments(&self) -> &Vec<CommentItem> {
+        self.discussion.items()
+    }
+}
+
+impl WidgetComponent for CommentDiscussion {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.discussion.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.discussion.view(frame, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.discussion.perform(cmd)
     }
 }
 
@@ -204,9 +363,23 @@ pub fn details(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Wid
     Widget::new(details)
 }
 
-pub fn discussion(context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Widget<Discussion> {
-    let comments = Discussion::new(context, theme, issue);
-    Widget::new(comments)
+pub fn issue_discussion(
+    context: &Context,
+    theme: &Theme,
+    issue: (IssueId, Issue),
+) -> Widget<IssueDiscussion> {
+    let discussion = IssueDiscussion::new(context, theme, issue, None);
+    Widget::new(discussion)
+}
+
+pub fn comment_discussion(
+    context: &Context,
+    theme: &Theme,
+    issue: (IssueId, Issue),
+    comment: Option<(CommentId, Comment)>,
+) -> Widget<CommentDiscussion> {
+    let discussion = CommentDiscussion::new(context, theme, issue, comment);
+    Widget::new(discussion)
 }
 
 pub fn context(theme: &Theme, issue: (IssueId, &Issue), profile: &Profile) -> Widget<ContextBar> {

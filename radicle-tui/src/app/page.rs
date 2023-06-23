@@ -3,6 +3,7 @@ use anyhow::Result;
 use radicle::cob::issue::{Issue, IssueId};
 use radicle::cob::patch::{Patch, PatchId};
 
+use radicle::cob::thread::{Comment, CommentId};
 use radicle_tui::cob;
 use tuirealm::{Frame, NoUserEvent, Sub, SubClause};
 
@@ -11,7 +12,9 @@ use radicle_tui::ui::layout;
 use radicle_tui::ui::theme::Theme;
 use radicle_tui::ui::widget;
 
-use super::{subscription, Application, Cid, HomeCid, IssueCid, IssueMessage, Message, PatchCid};
+use super::{
+    subscription, Application, Cid, CommentCid, HomeCid, IssueCid, IssueMessage, Message, PatchCid,
+};
 
 /// `tuirealm`'s event and prop system is designed to work with flat component hierarchies.
 /// Building deep nested component hierarchies would need a lot more additional effort to
@@ -166,7 +169,8 @@ impl ViewPage for IssuePage {
         let (id, issue) = &self.issue;
         let list = widget::issue::list(context, theme, (*id, issue.clone())).to_boxed();
         let details = widget::issue::details(context, theme, (*id, issue.clone())).to_boxed();
-        let discussion = widget::issue::discussion(context, theme, (*id, issue.clone())).to_boxed();
+        let discussion =
+            widget::issue::issue_discussion(context, theme, (*id, issue.clone())).to_boxed();
         let shortcuts = widget::common::shortcuts(
             theme,
             vec![
@@ -210,7 +214,7 @@ impl ViewPage for IssuePage {
                     app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
 
                     let discussion =
-                        widget::issue::discussion(context, theme, (id, issue)).to_boxed();
+                        widget::issue::issue_discussion(context, theme, (id, issue)).to_boxed();
                     app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
                 }
             }
@@ -229,12 +233,104 @@ impl ViewPage for IssuePage {
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
         let area = frame.size();
         let shortcuts_h = 1u16;
-        let layout = layout::issue_preview(area, shortcuts_h);
+        let layout = layout::issue_page(area, shortcuts_h);
 
-        app.view(&Cid::Issue(IssueCid::List), frame, layout.left);
+        app.view(&Cid::Issue(IssueCid::List), frame, layout.list);
         app.view(&Cid::Issue(IssueCid::Details), frame, layout.details);
         app.view(&Cid::Issue(IssueCid::Discussion), frame, layout.discussion);
         app.view(&Cid::Issue(IssueCid::Shortcuts), frame, layout.shortcuts);
+    }
+
+    fn subscribe(&self, _app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
+        Ok(())
+    }
+
+    fn unsubscribe(&self, _app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
+        Ok(())
+    }
+}
+
+///
+/// Discussion detail page
+///
+pub struct CommentPage {
+    issue: (IssueId, Issue),
+    comment: Option<(CommentId, Comment)>,
+}
+
+impl CommentPage {
+    pub fn new(issue: (IssueId, Issue), comment: Option<(CommentId, Comment)>) -> Self {
+        Self { issue, comment }
+    }
+}
+
+impl ViewPage for CommentPage {
+    fn mount(
+        &self,
+        app: &mut Application<Cid, Message, NoUserEvent>,
+        context: &Context,
+        theme: &Theme,
+    ) -> Result<()> {
+        let (id, issue) = &self.issue;
+        let details = widget::issue::details(context, theme, (*id, issue.clone())).to_boxed();
+        let discussion = widget::issue::comment_discussion(
+            context,
+            theme,
+            (*id, issue.clone()),
+            self.comment.clone(),
+        )
+        .to_boxed();
+        let shortcuts = widget::common::shortcuts(
+            theme,
+            vec![
+                widget::common::shortcut(theme, "esc", "back"),
+                widget::common::shortcut(theme, "q", "quit"),
+            ],
+        )
+        .to_boxed();
+
+        app.remount(Cid::Comment(CommentCid::Details), details, vec![])?;
+        app.remount(Cid::Comment(CommentCid::Shortcuts), shortcuts, vec![])?;
+        app.remount(Cid::Comment(CommentCid::Discussion), discussion, vec![])?;
+
+        app.active(&Cid::Comment(CommentCid::Discussion))?;
+
+        Ok(())
+    }
+
+    fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
+        app.umount(&Cid::Comment(CommentCid::Details))?;
+        app.umount(&Cid::Comment(CommentCid::Discussion))?;
+        app.umount(&Cid::Comment(CommentCid::Shortcuts))?;
+        Ok(())
+    }
+
+    fn update(
+        &mut self,
+        _app: &mut Application<Cid, Message, NoUserEvent>,
+        _context: &Context,
+        _theme: &Theme,
+        _message: Message,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
+        let area = frame.size();
+        let shortcuts_h = 1u16;
+        let layout = layout::comment_page(area, shortcuts_h);
+
+        app.view(&Cid::Comment(CommentCid::Details), frame, layout.details);
+        app.view(
+            &Cid::Comment(CommentCid::Discussion),
+            frame,
+            layout.discussion,
+        );
+        app.view(
+            &Cid::Comment(CommentCid::Shortcuts),
+            frame,
+            layout.shortcuts,
+        );
     }
 
     fn subscribe(&self, _app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {

@@ -29,7 +29,7 @@ use super::widget::common::list::{ListItem, TreeItem};
 ///
 /// Breaks up dependencies to [`Profile`] and [`Repository`] that
 /// would be needed if [`Author`] would be used directly.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AuthorItem {
     /// The author's DID.
     did: Did,
@@ -48,7 +48,7 @@ impl AuthorItem {
 }
 
 /// A comment item that can be used in tables, list or trees.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CommentItem {
     /// Comment OID.
     id: CommentId,
@@ -70,13 +70,6 @@ impl From<(&Profile, Issue, CommentId, Comment)> for CommentItem {
         let thread = issue.thread();
         let did = Did::from(comment.author());
 
-        use std::fs::File;
-        use std::io::prelude::*;
-
-        let mut file = File::create(format!("comment_{}.txt", id)).unwrap();
-        file.write_all(comment.body().to_string().as_bytes())
-            .unwrap();
-
         CommentItem {
             id,
             author: AuthorItem {
@@ -96,6 +89,16 @@ impl From<(&Profile, Issue, CommentId, Comment)> for CommentItem {
                 })
                 .collect(),
         }
+    }
+}
+
+impl CommentItem {
+    pub fn id(&self) -> &CommentId {
+        &self.id
+    }
+
+    pub fn replies(&self) -> &Vec<CommentItem> {
+        &self.replies
     }
 }
 
