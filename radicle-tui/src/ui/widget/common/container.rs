@@ -236,6 +236,8 @@ impl WidgetComponent for Container {
                 .constraints(vec![Constraint::Length(1), Constraint::Min(0)].as_ref())
                 .split(area);
             // reverse draw order: child needs to be drawn first?
+            self.component
+                .attr(Attribute::Focus, AttrValue::Flag(focus));
             self.component.view(frame, layout[1]);
 
             let block = Block::default()
@@ -306,7 +308,8 @@ impl WidgetComponent for LabeledContainer {
                 .split(layout[1]);
             // reverse draw order: child needs to be drawn first?
 
-            self.component.attr(Attribute::Focus, AttrValue::Flag(focus));
+            self.component
+                .attr(Attribute::Focus, AttrValue::Flag(focus));
             self.component.view(frame, inner_layout[1]);
 
             let block = Block::default()

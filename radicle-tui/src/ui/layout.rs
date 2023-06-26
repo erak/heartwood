@@ -2,7 +2,7 @@ use tuirealm::props::{AttrValue, Attribute};
 use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
 use tuirealm::MockComponent;
 
-pub struct IssuePreview {
+pub struct IssuePage {
     pub left: Rect,
     pub right: Rect,
     pub shortcuts: Rect,
@@ -138,7 +138,7 @@ pub fn centered_label(label_w: u16, area: Rect) -> Rect {
         .split(layout[1])[1]
 }
 
-pub fn issue_preview(area: Rect, shortcuts_h: u16) -> IssuePreview {
+pub fn issue_page(area: Rect, shortcuts_h: u16) -> IssuePage {
     let content_h = area.height.saturating_sub(shortcuts_h);
 
     let root = Layout::default()
@@ -158,7 +158,7 @@ pub fn issue_preview(area: Rect, shortcuts_h: u16) -> IssuePreview {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(root[0]);
 
-    IssuePreview {
+    IssuePage {
         left: split[0],
         right: split[1],
         shortcuts: root[1],

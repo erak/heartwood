@@ -164,9 +164,17 @@ impl ViewPage for IssuePage {
         theme: &Theme,
     ) -> Result<()> {
         let (id, issue) = &self.issue;
+        let comments = issue.comments().collect::<Vec<_>>();
+
         let list = widget::issue::list(context, theme, (*id, issue.clone())).to_boxed();
-        let discussion =
-            widget::issue::issue_discussion(context, theme, (*id, issue.clone())).to_boxed();
+        let details = widget::issue::details(
+            context,
+            theme,
+            (*id, issue.clone()),
+            comments.first().copied(),
+        )
+        .to_boxed();
+
         let shortcuts = widget::common::shortcuts(
             theme,
             vec![
@@ -177,7 +185,7 @@ impl ViewPage for IssuePage {
         .to_boxed();
 
         app.remount(Cid::Issue(IssueCid::List), list, vec![])?;
-        app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
+        app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
         app.remount(Cid::Issue(IssueCid::Shortcuts), shortcuts, vec![])?;
 
         app.active(&Cid::Issue(IssueCid::List))?;
@@ -187,7 +195,7 @@ impl ViewPage for IssuePage {
 
     fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
         app.umount(&Cid::Issue(IssueCid::List))?;
-        app.umount(&Cid::Issue(IssueCid::Discussion))?;
+        app.umount(&Cid::Issue(IssueCid::Details))?;
         app.umount(&Cid::Issue(IssueCid::Shortcuts))?;
         Ok(())
     }
@@ -203,9 +211,15 @@ impl ViewPage for IssuePage {
             Message::Issue(IssueMessage::Changed(id)) => {
                 let repo = context.repository();
                 if let Some(issue) = cob::issue::find(repo, &id)? {
-                    let discussion =
-                        widget::issue::issue_discussion(context, theme, (id, issue)).to_boxed();
-                    app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
+                    let comments = issue.comments().collect::<Vec<_>>();
+                    let details = widget::issue::details(
+                        context,
+                        theme,
+                        (id, issue.clone()),
+                        comments.first().copied(),
+                    )
+                    .to_boxed();
+                    app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
                 }
             }
             Message::Issue(IssueMessage::Focus(cid)) => {
@@ -220,10 +234,10 @@ impl ViewPage for IssuePage {
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
         let area = frame.size();
         let shortcuts_h = 1u16;
-        let layout = layout::issue_preview(area, shortcuts_h);
+        let layout = layout::issue_page(area, shortcuts_h);
 
         app.view(&Cid::Issue(IssueCid::List), frame, layout.left);
-        app.view(&Cid::Issue(IssueCid::Discussion), frame, layout.right);
+        app.view(&Cid::Issue(IssueCid::Details), frame, layout.right);
         app.view(&Cid::Issue(IssueCid::Shortcuts), frame, layout.shortcuts);
     }
 
