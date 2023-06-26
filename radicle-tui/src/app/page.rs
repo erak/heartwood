@@ -218,11 +218,8 @@ impl ViewPage for IssuePage {
                     app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
                 }
             }
-            Message::Issue(IssueMessage::FocusList) => {
-                app.active(&Cid::Issue(IssueCid::List))?;
-            }
-            Message::Issue(IssueMessage::FocusDiscussion) => {
-                app.active(&Cid::Issue(IssueCid::Discussion))?;
+            Message::Issue(IssueMessage::Focus(cid)) => {
+                app.active(&Cid::Issue(cid))?;
             }
             _ => {}
         }

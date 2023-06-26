@@ -10,7 +10,7 @@ use radicle_tui::ui::widget::{issue, patch};
 
 use radicle_tui::ui::widget::Widget;
 
-use super::{CommentMessage, IssueMessage, Message, PatchMessage};
+use super::{CommentMessage, IssueMessage, Message, PatchMessage, IssueCid};
 
 /// Since the framework does not know the type of messages that are being
 /// passed around in the app, the following handlers need to be implemented for
@@ -75,7 +75,7 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::LargeList> {
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Enter, ..
-            }) => Some(Message::Issue(IssueMessage::FocusDiscussion)),
+            }) => Some(Message::Issue(IssueMessage::Focus(IssueCid::Discussion))),
             _ => None,
         }
     }
@@ -113,7 +113,7 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::IssueDiscussion
                 Some(Message::Tick)
             }
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
-                Some(Message::Issue(IssueMessage::FocusList))
+                Some(Message::Issue(IssueMessage::Focus(IssueCid::List)))
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Enter, ..
