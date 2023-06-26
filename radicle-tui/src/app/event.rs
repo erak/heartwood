@@ -140,14 +140,26 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentDiscussi
     fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
         match event {
             Event::Keyboard(KeyEvent { code: Key::Up, .. }) => {
-                self.perform(Cmd::Move(MoveDirection::Up));
-                Some(Message::Tick)
+                let result = self.perform(Cmd::Move(MoveDirection::Up));
+                match result {
+                    CmdResult::Changed(State::One(StateValue::Usize(selected))) => {
+                        let comment = self.comments().get(selected)?;
+                        Some(Message::Comment(CommentMessage::Changed(*comment.id())))
+                    }
+                    _ => None,
+                }
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Down, ..
             }) => {
-                self.perform(Cmd::Move(MoveDirection::Down));
-                Some(Message::Tick)
+                let result = self.perform(Cmd::Move(MoveDirection::Down));
+                match result {
+                    CmdResult::Changed(State::One(StateValue::Usize(selected))) => {
+                        let comment = self.comments().get(selected)?;
+                        Some(Message::Comment(CommentMessage::Changed(*comment.id())))
+                    }
+                    _ => None,
+                }
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Left, ..

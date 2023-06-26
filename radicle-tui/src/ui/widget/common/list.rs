@@ -498,7 +498,13 @@ where
     }
 
     fn state(&self) -> State {
-        State::None
+        let values = self
+            .state
+            .selected()
+            .iter()
+            .map(|id| StateValue::Usize(*id))
+            .collect();
+        State::Vec(values)
     }
 
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
@@ -513,12 +519,14 @@ where
             Cmd::Move(Direction::Up) => {
                 self.position = std::cmp::max(self.position.saturating_sub(1), 1);
                 self.state.key_up(&tree);
-                CmdResult::None
+
+                CmdResult::Changed(self.state())
             }
             Cmd::Move(Direction::Down) => {
                 self.position = std::cmp::min(self.position.saturating_add(1), self.count);
                 self.state.key_down(&tree);
-                CmdResult::None
+
+                CmdResult::Changed(self.state())
             }
             Cmd::Move(Direction::Left) => {
                 let selected = self.state.selected();
@@ -530,15 +538,7 @@ where
                 self.state.key_right();
                 CmdResult::None
             }
-            Cmd::Submit => {
-                let values = self
-                    .state
-                    .selected()
-                    .iter()
-                    .map(|id| StateValue::Usize(*id))
-                    .collect();
-                CmdResult::Submit(State::Vec(values))
-            }
+            Cmd::Submit => CmdResult::Submit(self.state()),
             _ => CmdResult::None,
         }
     }

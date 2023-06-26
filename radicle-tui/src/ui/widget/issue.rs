@@ -254,6 +254,25 @@ impl WidgetComponent for Discussion {
                 };
 
                 CmdResult::Submit(State::One(StateValue::Usize(position)))
+            },
+            CmdResult::Changed(State::Vec(identifiers)) => {
+                let identifiers = identifiers
+                    .into_iter()
+                    .map(|value| value.unwrap_usize())
+                    .collect::<Vec<_>>();
+
+                let mut iter = identifiers.iter();
+                let mut comment = self.root.get(*iter.next().unwrap_or(&0));
+                for id in iter {
+                    comment = comment.unwrap().replies().get(*id);
+                }
+
+                let position = match comment {
+                    Some(comment) => self.all.iter().position(|c| *c == *comment).unwrap_or(0),
+                    _ => 0,
+                };
+
+                CmdResult::Changed(State::One(StateValue::Usize(position)))
             }
             _ => result,
         }

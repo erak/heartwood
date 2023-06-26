@@ -309,13 +309,29 @@ impl ViewPage for CommentPage {
     fn update(
         &mut self,
         app: &mut Application<Cid, Message, NoUserEvent>,
-        _context: &Context,
-        _theme: &Theme,
+        context: &Context,
+        theme: &Theme,
         message: Message,
     ) -> Result<()> {
-        if let Message::Comment(CommentMessage::Focus(cid)) = message {
-            app.active(&Cid::Comment(cid))?;
+        match message {
+            Message::Comment(CommentMessage::Focus(cid)) => {
+                app.active(&Cid::Comment(cid))?;
+            }
+            Message::Comment(CommentMessage::Changed(id)) => {
+                let (_, issue) = self.issue.clone();
+                let comment = issue
+                    .comments()
+                    .find(|(comment_id, _)| *comment_id == &id.into());
+
+                if let Some((comment_id, comment)) = comment {
+                    let body =
+                        widget::issue::comment_body(context, theme, (*comment_id, comment.clone()));
+                    app.remount(Cid::Comment(CommentCid::Body), body.to_boxed(), vec![])?;
+                }
+            }
+            _ => {}
         }
+
         Ok(())
     }
 
