@@ -49,6 +49,7 @@ pub enum IssueCid {
 pub enum CommentCid {
     Details,
     Discussion,
+    Body,
     Shortcuts,
 }
 
@@ -179,12 +180,20 @@ impl App {
         let repo = self.context.repository();
 
         if let Some(issue) = cob::issue::find(repo, &issue_id)? {
-            let comment = issue.comments().find(|(id, _)| *id == &comment_id);
-            let comment = comment.map(|(id, comment)| (*id, comment.clone()));
-            let view = Box::new(CommentPage::new((issue_id, issue), comment));
-            self.pages.push(view, app, &self.context, theme)?;
+            if let Some((comment_id, comment)) = issue.comments().find(|(id, _)| *id == &comment_id)
+            {
+                let view = Box::new(CommentPage::new(
+                    (issue_id, issue.clone()),
+                    (*comment_id, comment.clone()),
+                ));
+                self.pages.push(view, app, &self.context, theme)?;
 
-            Ok(())
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!(
+                    "Could not mount 'page::DiscussionPage'. Comment not found."
+                ))
+            }
         } else {
             Err(anyhow::anyhow!(
                 "Could not mount 'page::DiscussionPage'. Issue not found."

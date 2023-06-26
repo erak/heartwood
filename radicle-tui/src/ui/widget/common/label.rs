@@ -2,6 +2,7 @@ use tuirealm::command::{Cmd, CmdResult};
 use tuirealm::props::{AttrValue, Attribute, Color, Props, Style};
 use tuirealm::tui::layout::Rect;
 use tuirealm::tui::text::{Span, Text};
+use tuirealm::tui::widgets::Wrap;
 use tuirealm::{Frame, MockComponent, State};
 
 use crate::ui::widget::{Widget, WidgetComponent};
@@ -77,5 +78,38 @@ impl From<&Widget<Label>> for Text<'_> {
             .unwrap_color();
 
         Text::styled(content, Style::default().fg(foreground))
+    }
+}
+
+#[derive(Default)]
+pub struct Paragraph {
+    _scroll: usize,
+}
+
+impl WidgetComponent for Paragraph {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        use tuirealm::tui::widgets::Paragraph;
+
+        let fg = properties
+            .get_or(Attribute::Foreground, AttrValue::Color(Color::Reset))
+            .unwrap_color();
+
+        let content = properties
+            .get_or(Attribute::Content, AttrValue::String(String::default()))
+            .unwrap_string();
+
+        let content: Text<'_> = content.into();
+        let paragraph = Paragraph::new(content)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().fg(fg));
+        frame.render_widget(paragraph, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, _cmd: Cmd) -> CmdResult {
+        CmdResult::None
     }
 }

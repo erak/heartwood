@@ -12,7 +12,7 @@ pub struct IssuePage {
 pub struct CommentPage {
     pub details: Rect,
     pub discussion: Rect,
-    pub comment: Rect,
+    pub body: Rect,
     pub editor: Rect,
     pub shortcuts: Rect,
 }
@@ -213,7 +213,7 @@ pub fn comment_page(area: Rect, shortcuts_h: u16) -> CommentPage {
     CommentPage {
         details: left[0],
         discussion: left[1],
-        comment: right[0],
+        body: right[0],
         editor: right[1],
         shortcuts: root[1],
     }

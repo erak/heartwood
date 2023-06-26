@@ -1,24 +1,22 @@
-use radicle::cob::thread::Comment;
-use radicle::cob::thread::CommentId;
+use radicle::Profile;
+
+use radicle::cob::issue::{Issue, IssueId};
+use radicle::cob::thread::{Comment, CommentId};
+
 use radicle_cli::terminal::format;
 
-use radicle::cob::issue::Issue;
-use radicle::cob::issue::IssueId;
-use radicle::Profile;
 use tui_tree_widget::TreeIdentifierVec;
+
 use tuirealm::props::Color;
 use tuirealm::StateValue;
 
-use super::common::container::Container;
-use super::common::container::LabeledContainer;
-use super::common::list::List;
-use super::common::list::Property;
-use super::common::list::Tree;
+use super::common::container::{Container, LabeledContainer};
+use super::common::label::Paragraph;
+use super::common::list::{List, Property, Tree};
 use super::Widget;
 
 use crate::ui::cob;
-use crate::ui::cob::CommentItem;
-use crate::ui::cob::IssueItem;
+use crate::ui::cob::{CommentItem, IssueItem};
 use crate::ui::context::Context;
 use crate::ui::theme::Theme;
 use crate::ui::widget::common::context::ContextBar;
@@ -297,7 +295,8 @@ impl WidgetComponent for IssueDiscussion {
             .get_or(Attribute::Focus, AttrValue::Flag(false))
             .unwrap_flag();
 
-        self.discussion.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.discussion
+            .attr(Attribute::Focus, AttrValue::Flag(focus));
         self.discussion.view(frame, area);
     }
 
@@ -339,7 +338,8 @@ impl WidgetComponent for CommentDiscussion {
             .get_or(Attribute::Focus, AttrValue::Flag(false))
             .unwrap_flag();
 
-        self.discussion.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.discussion
+            .attr(Attribute::Focus, AttrValue::Flag(focus));
         self.discussion.view(frame, area);
     }
 
@@ -349,6 +349,42 @@ impl WidgetComponent for CommentDiscussion {
 
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
         self.discussion.perform(cmd)
+    }
+}
+
+pub struct CommentBody {
+    paragraph: Widget<Container>,
+}
+
+impl CommentBody {
+    pub fn new(_context: &Context, theme: &Theme, comment: (CommentId, Comment)) -> Self {
+        let paragraph = Widget::new(Paragraph::default())
+            .content(AttrValue::String(comment.1.body().to_string()))
+            .foreground(theme.colors.default_fg);
+
+        let paragraph = common::container(theme, paragraph.to_boxed());
+
+        Self { paragraph }
+    }
+}
+
+impl WidgetComponent for CommentBody {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.paragraph
+            .attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.paragraph.view(frame, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.paragraph.perform(cmd)
     }
 }
 
@@ -380,6 +416,15 @@ pub fn comment_discussion(
 ) -> Widget<CommentDiscussion> {
     let discussion = CommentDiscussion::new(context, theme, issue, comment);
     Widget::new(discussion)
+}
+
+pub fn comment_body(
+    context: &Context,
+    theme: &Theme,
+    comment: (CommentId, Comment),
+) -> Widget<CommentBody> {
+    let body = CommentBody::new(context, theme, comment);
+    Widget::new(body)
 }
 
 pub fn context(theme: &Theme, issue: (IssueId, &Issue), profile: &Profile) -> Widget<ContextBar> {

@@ -255,11 +255,11 @@ impl ViewPage for IssuePage {
 ///
 pub struct CommentPage {
     issue: (IssueId, Issue),
-    comment: Option<(CommentId, Comment)>,
+    comment: (CommentId, Comment),
 }
 
 impl CommentPage {
-    pub fn new(issue: (IssueId, Issue), comment: Option<(CommentId, Comment)>) -> Self {
+    pub fn new(issue: (IssueId, Issue), comment: (CommentId, Comment)) -> Self {
         Self { issue, comment }
     }
 }
@@ -277,9 +277,10 @@ impl ViewPage for CommentPage {
             context,
             theme,
             (*id, issue.clone()),
-            self.comment.clone(),
+            Some(self.comment.clone()),
         )
         .to_boxed();
+        let body = widget::issue::comment_body(context, theme, self.comment.clone()).to_boxed();
         let shortcuts = widget::common::shortcuts(
             theme,
             vec![
@@ -290,8 +291,9 @@ impl ViewPage for CommentPage {
         .to_boxed();
 
         app.remount(Cid::Comment(CommentCid::Details), details, vec![])?;
-        app.remount(Cid::Comment(CommentCid::Shortcuts), shortcuts, vec![])?;
         app.remount(Cid::Comment(CommentCid::Discussion), discussion, vec![])?;
+        app.remount(Cid::Comment(CommentCid::Body), body, vec![])?;
+        app.remount(Cid::Comment(CommentCid::Shortcuts), shortcuts, vec![])?;
 
         app.active(&Cid::Comment(CommentCid::Discussion))?;
 
@@ -301,6 +303,7 @@ impl ViewPage for CommentPage {
     fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
         app.umount(&Cid::Comment(CommentCid::Details))?;
         app.umount(&Cid::Comment(CommentCid::Discussion))?;
+        app.umount(&Cid::Comment(CommentCid::Body))?;
         app.umount(&Cid::Comment(CommentCid::Shortcuts))?;
         Ok(())
     }
@@ -326,6 +329,7 @@ impl ViewPage for CommentPage {
             frame,
             layout.discussion,
         );
+        app.view(&Cid::Comment(CommentCid::Body), frame, layout.body);
         app.view(
             &Cid::Comment(CommentCid::Shortcuts),
             frame,
