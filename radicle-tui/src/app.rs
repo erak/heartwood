@@ -84,6 +84,7 @@ pub enum PatchMessage {
 #[derive(Debug, Eq, PartialEq)]
 pub enum CommentMessage {
     Show(IssueId, CommentId),
+    Focus(CommentCid),
     Leave,
 }
 

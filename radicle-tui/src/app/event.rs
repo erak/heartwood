@@ -10,7 +10,7 @@ use radicle_tui::ui::widget::{issue, patch};
 
 use radicle_tui::ui::widget::Widget;
 
-use super::{CommentMessage, IssueMessage, Message, PatchMessage, IssueCid};
+use super::{CommentCid, CommentMessage, IssueCid, IssueMessage, Message, PatchMessage};
 
 /// Since the framework does not know the type of messages that are being
 /// passed around in the app, the following handlers need to be implemented for
@@ -161,6 +161,9 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentDiscussi
                 self.perform(Cmd::Move(MoveDirection::Right));
                 Some(Message::Tick)
             }
+            Event::Keyboard(KeyEvent {
+                code: Key::Enter, ..
+            }) => Some(Message::Comment(CommentMessage::Focus(CommentCid::Body))),
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
                 Some(Message::Comment(CommentMessage::Leave))
             }
@@ -182,21 +185,9 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentBody> {
                 self.perform(Cmd::Move(MoveDirection::Down));
                 Some(Message::Tick)
             }
-            // Event::Keyboard(KeyEvent {
-            //     code: Key::Left, ..
-            // }) => {
-            //     self.perform(Cmd::Move(MoveDirection::Left));
-            //     Some(Message::Tick)
-            // }
-            // Event::Keyboard(KeyEvent {
-            //     code: Key::Right, ..
-            // }) => {
-            //     self.perform(Cmd::Move(MoveDirection::Right));
-            //     Some(Message::Tick)
-            // }
-            // Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
-            //     Some(Message::Comment(CommentMessage::Leave))
-            // }
+            Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => Some(Message::Comment(
+                CommentMessage::Focus(CommentCid::Discussion),
+            )),
             _ => None,
         }
     }

@@ -13,7 +13,8 @@ use radicle_tui::ui::theme::Theme;
 use radicle_tui::ui::widget;
 
 use super::{
-    subscription, Application, Cid, CommentCid, HomeCid, IssueCid, IssueMessage, Message, PatchCid,
+    subscription, Application, Cid, CommentCid, CommentMessage, HomeCid, IssueCid, IssueMessage,
+    Message, PatchCid,
 };
 
 /// `tuirealm`'s event and prop system is designed to work with flat component hierarchies.
@@ -307,11 +308,14 @@ impl ViewPage for CommentPage {
 
     fn update(
         &mut self,
-        _app: &mut Application<Cid, Message, NoUserEvent>,
+        app: &mut Application<Cid, Message, NoUserEvent>,
         _context: &Context,
         _theme: &Theme,
-        _message: Message,
+        message: Message,
     ) -> Result<()> {
+        if let Message::Comment(CommentMessage::Focus(cid)) = message {
+            app.active(&Cid::Comment(cid))?;
+        }
         Ok(())
     }
 
