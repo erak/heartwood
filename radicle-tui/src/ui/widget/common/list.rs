@@ -484,15 +484,13 @@ where
             .node_closed_symbol("🞂 ")
             .node_open_symbol("🞃 ");
 
-        if focus {
-            let pager = Paragraph::new(Text::from(Spans::from(Span::styled(
-                format!("{} / {}", self.position, self.count),
-                Style::default().fg(highlight_color),
-            ))))
-            .alignment(Alignment::Right);
+        let pager = Paragraph::new(Text::from(Spans::from(Span::styled(
+            format!("{} / {}", self.position, self.count),
+            Style::default().fg(highlight_color),
+        ))))
+        .alignment(Alignment::Right);
 
-            frame.render_widget(pager, layout[1]);
-        }
+        frame.render_widget(pager, layout[1]);
 
         frame.render_stateful_widget(tree, layout[0], &mut self.state);
     }

@@ -11,7 +11,7 @@ use tuirealm::props::Color;
 use tuirealm::StateValue;
 
 use super::common::container::{Container, LabeledContainer};
-use super::common::label::Paragraph;
+use super::common::label::Textarea;
 use super::common::list::{List, Property, Tree};
 use super::Widget;
 
@@ -254,7 +254,7 @@ impl WidgetComponent for Discussion {
                 };
 
                 CmdResult::Submit(State::One(StateValue::Usize(position)))
-            },
+            }
             CmdResult::Changed(State::Vec(identifiers)) => {
                 let identifiers = identifiers
                     .into_iter()
@@ -372,18 +372,18 @@ impl WidgetComponent for CommentDiscussion {
 }
 
 pub struct CommentBody {
-    paragraph: Widget<Container>,
+    textarea: Widget<Container>,
 }
 
 impl CommentBody {
     pub fn new(_context: &Context, theme: &Theme, comment: (CommentId, Comment)) -> Self {
-        let paragraph = Widget::new(Paragraph::default())
+        let textarea = Widget::new(Textarea::new(theme.clone()))
             .content(AttrValue::String(comment.1.body().to_string()))
             .foreground(theme.colors.default_fg);
 
-        let paragraph = common::container(theme, paragraph.to_boxed());
+        let textarea = common::container(theme, textarea.to_boxed());
 
-        Self { paragraph }
+        Self { textarea }
     }
 }
 
@@ -393,9 +393,8 @@ impl WidgetComponent for CommentBody {
             .get_or(Attribute::Focus, AttrValue::Flag(false))
             .unwrap_flag();
 
-        self.paragraph
-            .attr(Attribute::Focus, AttrValue::Flag(focus));
-        self.paragraph.view(frame, area);
+        self.textarea.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.textarea.view(frame, area);
     }
 
     fn state(&self) -> State {
@@ -403,7 +402,7 @@ impl WidgetComponent for CommentBody {
     }
 
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
-        self.paragraph.perform(cmd)
+        self.textarea.perform(cmd)
     }
 }
 

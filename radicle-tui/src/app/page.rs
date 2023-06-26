@@ -319,9 +319,7 @@ impl ViewPage for CommentPage {
             }
             Message::Comment(CommentMessage::Changed(id)) => {
                 let (_, issue) = self.issue.clone();
-                let comment = issue
-                    .comments()
-                    .find(|(comment_id, _)| *comment_id == &id.into());
+                let comment = issue.comments().find(|(comment_id, _)| *comment_id == &id);
 
                 if let Some((comment_id, comment)) = comment {
                     let body =

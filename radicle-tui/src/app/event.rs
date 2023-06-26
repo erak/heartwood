@@ -188,13 +188,13 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentBody> {
     fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
         match event {
             Event::Keyboard(KeyEvent { code: Key::Up, .. }) => {
-                self.perform(Cmd::Move(MoveDirection::Up));
+                self.perform(Cmd::Scroll(MoveDirection::Up));
                 Some(Message::Tick)
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Down, ..
             }) => {
-                self.perform(Cmd::Move(MoveDirection::Down));
+                self.perform(Cmd::Scroll(MoveDirection::Down));
                 Some(Message::Tick)
             }
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => Some(Message::Comment(
