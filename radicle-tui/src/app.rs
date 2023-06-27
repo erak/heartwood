@@ -184,6 +184,7 @@ impl App {
             if let Some((comment_id, comment)) = issue.comments().find(|(id, _)| *id == &comment_id)
             {
                 let view = Box::new(CommentPage::new(
+                    theme.clone(),
                     (issue_id, issue.clone()),
                     (*comment_id, comment.clone()),
                 ));

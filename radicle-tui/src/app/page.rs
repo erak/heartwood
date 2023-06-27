@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 
 use radicle::cob::issue::{Issue, IssueId};
@@ -5,12 +7,13 @@ use radicle::cob::patch::{Patch, PatchId};
 
 use radicle::cob::thread::{Comment, CommentId};
 use radicle_tui::cob;
+use radicle_tui::ui::widget::common::context::Shortcuts;
 use tuirealm::{Frame, NoUserEvent, Sub, SubClause};
 
 use radicle_tui::ui::context::Context;
 use radicle_tui::ui::layout;
 use radicle_tui::ui::theme::Theme;
-use radicle_tui::ui::widget;
+use radicle_tui::ui::widget::{self, Widget};
 
 use super::{
     subscription, Application, Cid, CommentCid, CommentMessage, HomeCid, IssueCid, IssueMessage,
@@ -254,11 +257,49 @@ impl ViewPage for IssuePage {
 pub struct CommentPage {
     issue: (IssueId, Issue),
     comment: (CommentId, Comment),
+    shortcuts: HashMap<CommentCid, Widget<Shortcuts>>,
 }
 
 impl CommentPage {
-    pub fn new(issue: (IssueId, Issue), comment: (CommentId, Comment)) -> Self {
-        Self { issue, comment }
+    pub fn new(theme: Theme, issue: (IssueId, Issue), comment: (CommentId, Comment)) -> Self {
+        let shortcuts = Self::build_shortcuts(&theme);
+
+        Self {
+            issue,
+            comment,
+            shortcuts,
+        }
+    }
+
+    fn build_shortcuts(theme: &Theme) -> HashMap<CommentCid, Widget<Shortcuts>> {
+        [
+            (
+                CommentCid::Discussion,
+                widget::common::shortcuts(
+                    theme,
+                    vec![
+                        widget::common::shortcut(theme, "esc", "back"),
+                        widget::common::shortcut(theme, "↑/↓", "navigate"),
+                        widget::common::shortcut(theme, "enter", "view"),
+                        widget::common::shortcut(theme, "q", "quit"),
+                    ],
+                ),
+            ),
+            (
+                CommentCid::Body,
+                widget::common::shortcuts(
+                    theme,
+                    vec![
+                        widget::common::shortcut(theme, "esc", "back"),
+                        widget::common::shortcut(theme, "↑/↓", "scroll"),
+                        widget::common::shortcut(theme, "q", "quit"),
+                    ],
+                ),
+            ),
+        ]
+        .iter()
+        .cloned()
+        .collect()
     }
 }
 
@@ -269,31 +310,30 @@ impl ViewPage for CommentPage {
         context: &Context,
         theme: &Theme,
     ) -> Result<()> {
-        let (id, issue) = &self.issue;
-        let details = widget::issue::details(context, theme, (*id, issue.clone())).to_boxed();
+        let details = widget::issue::details(context, theme, self.issue.clone()).to_boxed();
         let discussion = widget::issue::comment_discussion(
             context,
             theme,
-            (*id, issue.clone()),
+            self.issue.clone(),
             Some(self.comment.clone()),
         )
         .to_boxed();
         let body = widget::issue::comment_body(context, theme, self.comment.clone()).to_boxed();
-        let shortcuts = widget::common::shortcuts(
-            theme,
-            vec![
-                widget::common::shortcut(theme, "esc", "back"),
-                widget::common::shortcut(theme, "q", "quit"),
-            ],
-        )
-        .to_boxed();
 
         app.remount(Cid::Comment(CommentCid::Details), details, vec![])?;
         app.remount(Cid::Comment(CommentCid::Discussion), discussion, vec![])?;
         app.remount(Cid::Comment(CommentCid::Body), body, vec![])?;
-        app.remount(Cid::Comment(CommentCid::Shortcuts), shortcuts, vec![])?;
 
-        app.active(&Cid::Comment(CommentCid::Discussion))?;
+        let active_cid = CommentCid::Discussion;
+        if let Some(shortcuts) = self.shortcuts.get(&active_cid) {
+            app.remount(
+                Cid::Comment(CommentCid::Shortcuts),
+                shortcuts.clone().to_boxed(),
+                vec![],
+            )?;
+        }
+
+        app.active(&Cid::Comment(active_cid))?;
 
         Ok(())
     }
@@ -315,6 +355,14 @@ impl ViewPage for CommentPage {
     ) -> Result<()> {
         match message {
             Message::Comment(CommentMessage::Focus(cid)) => {
+                if let Some(shortcuts) = self.shortcuts.get(&cid) {
+                    app.remount(
+                        Cid::Comment(CommentCid::Shortcuts),
+                        shortcuts.clone().to_boxed(),
+                        vec![],
+                    )?;
+                }
+
                 app.active(&Cid::Comment(cid))?;
             }
             Message::Comment(CommentMessage::Changed(id)) => {
