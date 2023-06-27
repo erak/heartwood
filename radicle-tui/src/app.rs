@@ -50,6 +50,7 @@ pub enum CommentCid {
     Details,
     Discussion,
     Body,
+    Editor,
     Shortcuts,
 }
 

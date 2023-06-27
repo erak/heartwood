@@ -378,6 +378,7 @@ pub struct CommentBody {
 impl CommentBody {
     pub fn new(_context: &Context, theme: &Theme, comment: (CommentId, Comment)) -> Self {
         let textarea = Widget::new(Textarea::new(theme.clone()))
+            .custom(Textarea::PROP_SHOW_PROGRESS, AttrValue::Flag(true))
             .content(AttrValue::String(comment.1.body().to_string()))
             .foreground(theme.colors.default_fg);
 
@@ -388,6 +389,41 @@ impl CommentBody {
 }
 
 impl WidgetComponent for CommentBody {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let focus = properties
+            .get_or(Attribute::Focus, AttrValue::Flag(false))
+            .unwrap_flag();
+
+        self.textarea.attr(Attribute::Focus, AttrValue::Flag(focus));
+        self.textarea.view(frame, area);
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.textarea.perform(cmd)
+    }
+}
+
+pub struct CommentReply {
+    textarea: Widget<Container>,
+}
+
+impl CommentReply {
+    pub fn new(_context: &Context, theme: &Theme, _comment: (CommentId, Comment)) -> Self {
+        let textarea = Widget::new(Textarea::new(theme.clone()))
+            .content(AttrValue::String("Leave a comment...".to_string()))
+            .foreground(theme.colors.defaul_dark);
+
+        let textarea = common::container(theme, textarea.to_boxed());
+
+        Self { textarea }
+    }
+}
+
+impl WidgetComponent for CommentReply {
     fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
         let focus = properties
             .get_or(Attribute::Focus, AttrValue::Flag(false))
@@ -443,6 +479,15 @@ pub fn comment_body(
 ) -> Widget<CommentBody> {
     let body = CommentBody::new(context, theme, comment);
     Widget::new(body)
+}
+
+pub fn comment_reply(
+    context: &Context,
+    theme: &Theme,
+    comment: (CommentId, Comment),
+) -> Widget<CommentReply> {
+    let editor = CommentReply::new(context, theme, comment);
+    Widget::new(editor)
 }
 
 pub fn context(theme: &Theme, issue: (IssueId, &Issue), profile: &Profile) -> Widget<ContextBar> {

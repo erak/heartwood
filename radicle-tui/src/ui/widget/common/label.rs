@@ -91,6 +91,8 @@ pub struct Textarea {
 }
 
 impl Textarea {
+    pub const PROP_SHOW_PROGRESS: &str = "prop_textarea_show_progress";
+
     pub fn new(theme: Theme) -> Self {
         Self {
             theme,
@@ -126,6 +128,12 @@ impl WidgetComponent for Textarea {
         let content = properties
             .get_or(Attribute::Content, AttrValue::String(String::default()))
             .unwrap_string();
+        let show_progress = properties
+            .get_or(
+                Attribute::Custom(Self::PROP_SHOW_PROGRESS),
+                AttrValue::Flag(false),
+            )
+            .unwrap_flag();
 
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -164,13 +172,15 @@ impl WidgetComponent for Textarea {
 
         self.scroll_percent = Self::scroll_percent(self.offset, len, height as usize);
 
-        let progress = Spans::from(vec![Span::styled(
-            format!("{} %", self.scroll_percent),
-            Style::default().fg(highlight_color),
-        )]);
+        if show_progress {
+            let progress = Spans::from(vec![Span::styled(
+                format!("{} %", self.scroll_percent),
+                Style::default().fg(highlight_color),
+            )]);
 
-        let progress = Paragraph::new(progress).alignment(Alignment::Right);
-        frame.render_widget(progress, layout[1]);
+            let progress = Paragraph::new(progress).alignment(Alignment::Right);
+            frame.render_widget(progress, layout[1]);
+        }
     }
 
     fn state(&self) -> State {

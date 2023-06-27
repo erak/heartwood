@@ -11,6 +11,8 @@ const COLOR_DEFAULT_FAINT: Color = Color::Rgb(20, 20, 20);
 #[derive(Debug, Clone)]
 pub struct Colors {
     pub default_fg: Color,
+    pub defaul_dark: Color,
+    pub default_darkest: Color,
     pub tabs_highlighted_fg: Color,
     pub workspaces_info_fg: Color,
     pub labeled_container_bg: Color,
@@ -83,6 +85,8 @@ pub fn default_dark() -> Theme {
         name: String::from("Default"),
         colors: Colors {
             default_fg: COLOR_DEFAULT_FG,
+            defaul_dark: COLOR_DEFAULT_DARK,
+            default_darkest: COLOR_DEFAULT_DARKEST,
             tabs_highlighted_fg: Color::Magenta,
             workspaces_info_fg: Color::Yellow,
             labeled_container_bg: COLOR_DEFAULT_FAINT,

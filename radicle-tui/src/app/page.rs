@@ -319,10 +319,12 @@ impl ViewPage for CommentPage {
         )
         .to_boxed();
         let body = widget::issue::comment_body(context, theme, self.comment.clone()).to_boxed();
+        let editor = widget::issue::comment_reply(context, theme, self.comment.clone()).to_boxed();
 
         app.remount(Cid::Comment(CommentCid::Details), details, vec![])?;
         app.remount(Cid::Comment(CommentCid::Discussion), discussion, vec![])?;
         app.remount(Cid::Comment(CommentCid::Body), body, vec![])?;
+        app.remount(Cid::Comment(CommentCid::Editor), editor, vec![])?;
 
         let active_cid = CommentCid::Discussion;
         if let Some(shortcuts) = self.shortcuts.get(&active_cid) {
@@ -342,6 +344,7 @@ impl ViewPage for CommentPage {
         app.umount(&Cid::Comment(CommentCid::Details))?;
         app.umount(&Cid::Comment(CommentCid::Discussion))?;
         app.umount(&Cid::Comment(CommentCid::Body))?;
+        app.umount(&Cid::Comment(CommentCid::Editor))?;
         app.umount(&Cid::Comment(CommentCid::Shortcuts))?;
         Ok(())
     }
@@ -393,6 +396,7 @@ impl ViewPage for CommentPage {
             layout.discussion,
         );
         app.view(&Cid::Comment(CommentCid::Body), frame, layout.body);
+        app.view(&Cid::Comment(CommentCid::Editor), frame, layout.editor);
         app.view(
             &Cid::Comment(CommentCid::Shortcuts),
             frame,

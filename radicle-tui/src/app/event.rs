@@ -205,6 +205,12 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentBody> {
     }
 }
 
+impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentReply> {
+    fn on(&mut self, _event: Event<NoUserEvent>) -> Option<Message> {
+        None
+    }
+}
+
 impl tuirealm::Component<Message, NoUserEvent> for Widget<PatchBrowser> {
     fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
         match event {
