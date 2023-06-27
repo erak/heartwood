@@ -51,7 +51,13 @@ pub enum CommentCid {
     Discussion,
     Body,
     Editor,
+    // NotImplementedError,
     Shortcuts,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+pub enum PopupCid {
+    Warning,
 }
 
 /// All component ids known to this application.
@@ -61,6 +67,7 @@ pub enum Cid {
     Issue(IssueCid),
     Comment(CommentCid),
     Patch(PatchCid),
+    Popup(PopupCid),
     GlobalListener,
 }
 
@@ -87,7 +94,15 @@ pub enum CommentMessage {
     Show(IssueId, CommentId),
     Changed(CommentId),
     Focus(CommentCid),
+    // NotImplementedError,
+    // HidePopup,
     Leave,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum WarningMessage {
+    Show(String),
+    Hide
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -97,6 +112,7 @@ pub enum Message {
     Comment(CommentMessage),
     Patch(PatchMessage),
     NavigationChanged(u16),
+    Warning(WarningMessage),
     Tick,
     Quit,
 }

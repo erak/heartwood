@@ -1,7 +1,7 @@
 use tuirealm::command::{Cmd, CmdResult};
 use tuirealm::props::{AttrValue, Attribute, BorderSides, BorderType, Props, Style, TextModifiers};
 use tuirealm::tui::layout::{Constraint, Direction, Layout, Rect};
-use tuirealm::tui::widgets::{Block, Cell, Row};
+use tuirealm::tui::widgets::{Block, Cell, Row, Clear};
 use tuirealm::{Frame, MockComponent, State, StateValue};
 
 use crate::ui::ext::HeaderBlock;
@@ -323,6 +323,49 @@ impl WidgetComponent for LabeledContainer {
 
             self.header.attr(Attribute::Focus, AttrValue::Flag(focus));
             self.header.view(frame, layout[0]);
+        }
+    }
+
+    fn state(&self) -> State {
+        State::None
+    }
+
+    fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
+        self.component.perform(cmd)
+    }
+}
+
+pub struct Popup {
+    component: Box<dyn MockComponent>,
+    theme: Theme,
+}
+
+impl Popup {
+    pub fn new(theme: Theme, component: Box<dyn MockComponent>) -> Self {
+        Self { component, theme }
+    }
+}
+
+impl WidgetComponent for Popup {
+    fn view(&mut self, properties: &Props, frame: &mut Frame, area: Rect) {
+        let display = properties
+            .get_or(Attribute::Display, AttrValue::Flag(true))
+            .unwrap_flag();
+        // let component_h = self.component.query(Attr)
+
+        if display {
+            let block = Block::default()
+                .borders(BorderSides::ALL)
+                .border_style(Style::default().fg(self.theme.colors.container_border_focus_fg))
+                .border_type(BorderType::Rounded);
+            
+            let area = layout::centered_component(com, area);
+            let inner_area = block.inner(area);
+            
+            frame.render_widget(Clear, area);
+            frame.render_widget(block, area);
+
+            self.component.view(frame, inner_area);
         }
     }
 

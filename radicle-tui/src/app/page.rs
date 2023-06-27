@@ -17,7 +17,7 @@ use radicle_tui::ui::widget::{self, Widget};
 
 use super::{
     subscription, Application, Cid, CommentCid, CommentMessage, HomeCid, IssueCid, IssueMessage,
-    Message, PatchCid,
+    Message, PatchCid, PopupCid, WarningMessage,
 };
 
 /// `tuirealm`'s event and prop system is designed to work with flat component hierarchies.
@@ -292,6 +292,7 @@ impl CommentPage {
                     vec![
                         widget::common::shortcut(theme, "esc", "back"),
                         widget::common::shortcut(theme, "↑/↓", "scroll"),
+                        widget::common::shortcut(theme, "c", "reply"),
                         widget::common::shortcut(theme, "q", "quit"),
                     ],
                 ),
@@ -378,6 +379,16 @@ impl ViewPage for CommentPage {
                     app.remount(Cid::Comment(CommentCid::Body), body.to_boxed(), vec![])?;
                 }
             }
+            Message::Warning(WarningMessage::Show(message)) => {
+                let popup = widget::common::warning(theme, message).to_boxed();
+                app.remount(Cid::Popup(PopupCid::Warning), popup, vec![])?;
+
+                app.active(&Cid::Popup(PopupCid::Warning))?;
+            }
+            Message::Warning(WarningMessage::Hide) => {
+                app.blur()?;
+                app.umount(&Cid::Popup(PopupCid::Warning))?;
+            }
             _ => {}
         }
 
@@ -402,6 +413,10 @@ impl ViewPage for CommentPage {
             frame,
             layout.shortcuts,
         );
+
+        if app.mounted(&Cid::Popup(PopupCid::Warning)) {
+            app.view(&Cid::Popup(PopupCid::Warning), frame, area);
+        }
     }
 
     fn subscribe(&self, _app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {

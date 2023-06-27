@@ -1,3 +1,4 @@
+use radicle_tui::ui::widget::common::popup::WarningPopup;
 use tuirealm::command::{Cmd, CmdResult, Direction as MoveDirection};
 use tuirealm::event::{Event, Key, KeyEvent};
 use tuirealm::{MockComponent, NoUserEvent, State, StateValue};
@@ -10,7 +11,7 @@ use radicle_tui::ui::widget::{issue, patch};
 
 use radicle_tui::ui::widget::Widget;
 
-use super::{CommentCid, CommentMessage, IssueCid, IssueMessage, Message, PatchMessage};
+use super::{CommentCid, CommentMessage, IssueCid, IssueMessage, Message, PatchMessage, WarningMessage};
 
 /// Since the framework does not know the type of messages that are being
 /// passed around in the app, the following handlers need to be implemented for
@@ -197,6 +198,17 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentBody> {
                 self.perform(Cmd::Scroll(MoveDirection::Down));
                 Some(Message::Tick)
             }
+            // Event::Keyboard(KeyEvent {
+            //     code: Key::Char('c'),
+            //     ..
+            // }) => Some(Message::Comment(CommentMessage::NotImplementedError)),
+            // Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => Some(Message::Comment(
+            //     CommentMessage::Focus(CommentCid::Discussion),
+            // )),
+            Event::Keyboard(KeyEvent {
+                code: Key::Char('c'),
+                ..
+            }) => Some(Message::Warning(WarningMessage::Show("Not implemented yet.".to_owned()))),
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => Some(Message::Comment(
                 CommentMessage::Focus(CommentCid::Discussion),
             )),
@@ -208,6 +220,17 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentBody> {
 impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::CommentReply> {
     fn on(&mut self, _event: Event<NoUserEvent>) -> Option<Message> {
         None
+    }
+}
+
+impl tuirealm::Component<Message, NoUserEvent> for Widget<WarningPopup> {
+    fn on(&mut self, event: Event<NoUserEvent>) -> Option<Message> {
+        match event {
+            Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
+                Some(Message::Warning(WarningMessage::Hide))
+            }
+            _ => None,
+        }
     }
 }
 

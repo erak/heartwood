@@ -2,6 +2,7 @@ pub mod container;
 pub mod context;
 pub mod label;
 pub mod list;
+pub mod popup;
 
 use tuirealm::props::{AttrValue, Attribute};
 use tuirealm::MockComponent;
@@ -13,6 +14,7 @@ use list::{Property, PropertyList};
 
 use self::container::Container;
 use self::list::{ColumnWidth, PropertyTable};
+use self::popup::WarningPopup;
 
 use super::Widget;
 
@@ -121,4 +123,9 @@ pub fn tabs(theme: &Theme, tabs: Vec<Widget<Label>>) -> Widget<Tabs> {
     let tabs = Tabs::new(tabs, line);
 
     Widget::new(tabs).height(2)
+}
+
+pub fn warning(theme: &Theme, message: String) -> Widget<WarningPopup> {
+    let popup = WarningPopup::new(theme.clone(), label(&message));
+    Widget::new(popup)
 }
