@@ -165,7 +165,8 @@ impl ViewPage for IssuePage {
     ) -> Result<()> {
         let (id, issue) = &self.issue;
         let list = widget::issue::list(context, theme, (*id, issue.clone())).to_boxed();
-        let details = widget::issue::details(context, theme, (*id, issue.clone())).to_boxed();
+        let discussion =
+            widget::issue::issue_discussion(context, theme, (*id, issue.clone())).to_boxed();
         let shortcuts = widget::common::shortcuts(
             theme,
             vec![
@@ -176,7 +177,7 @@ impl ViewPage for IssuePage {
         .to_boxed();
 
         app.remount(Cid::Issue(IssueCid::List), list, vec![])?;
-        app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
+        app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
         app.remount(Cid::Issue(IssueCid::Shortcuts), shortcuts, vec![])?;
 
         app.active(&Cid::Issue(IssueCid::List))?;
@@ -186,7 +187,7 @@ impl ViewPage for IssuePage {
 
     fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
         app.umount(&Cid::Issue(IssueCid::List))?;
-        app.umount(&Cid::Issue(IssueCid::Details))?;
+        app.umount(&Cid::Issue(IssueCid::Discussion))?;
         app.umount(&Cid::Issue(IssueCid::Shortcuts))?;
         Ok(())
     }
@@ -202,8 +203,9 @@ impl ViewPage for IssuePage {
             Message::Issue(IssueMessage::Changed(id)) => {
                 let repo = context.repository();
                 if let Some(issue) = cob::issue::find(repo, &id)? {
-                    let details = widget::issue::details(context, theme, (id, issue)).to_boxed();
-                    app.remount(Cid::Issue(IssueCid::Details), details, vec![])?;
+                    let discussion =
+                        widget::issue::issue_discussion(context, theme, (id, issue)).to_boxed();
+                    app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
                 }
             }
             Message::Issue(IssueMessage::Focus(cid)) => {
@@ -221,7 +223,7 @@ impl ViewPage for IssuePage {
         let layout = layout::issue_preview(area, shortcuts_h);
 
         app.view(&Cid::Issue(IssueCid::List), frame, layout.left);
-        app.view(&Cid::Issue(IssueCid::Details), frame, layout.details);
+        app.view(&Cid::Issue(IssueCid::Discussion), frame, layout.right);
         app.view(&Cid::Issue(IssueCid::Shortcuts), frame, layout.shortcuts);
     }
 

@@ -40,7 +40,7 @@ pub enum PatchCid {
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum IssueCid {
     List,
-    Details,
+    Discussion,
     Shortcuts,
 }
 
