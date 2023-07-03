@@ -40,6 +40,7 @@ pub enum PatchCid {
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum IssueCid {
     List,
+    NewForm,
     Discussion,
     Shortcuts,
 }
@@ -63,6 +64,8 @@ pub enum IssueMessage {
     Show(IssueId),
     Changed(IssueId),
     Focus(IssueCid),
+    OpenPopup(IssueCid),
+    ClosePopup(IssueCid),
     Leave,
 }
 

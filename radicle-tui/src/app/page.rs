@@ -171,6 +171,7 @@ impl ViewPage for IssuePage {
             theme,
             vec![
                 widget::common::shortcut(theme, "esc", "back"),
+                widget::common::shortcut(theme, "o", "open"),
                 widget::common::shortcut(theme, "q", "quit"),
             ],
         )
@@ -187,6 +188,7 @@ impl ViewPage for IssuePage {
 
     fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
         app.umount(&Cid::Issue(IssueCid::List))?;
+        app.umount(&Cid::Issue(IssueCid::NewForm))?;
         app.umount(&Cid::Issue(IssueCid::Discussion))?;
         app.umount(&Cid::Issue(IssueCid::Shortcuts))?;
         Ok(())
@@ -211,6 +213,17 @@ impl ViewPage for IssuePage {
             Message::Issue(IssueMessage::Focus(cid)) => {
                 app.active(&Cid::Issue(cid))?;
             }
+            Message::Issue(IssueMessage::OpenPopup(cid)) => {
+                if cid == IssueCid::NewForm {
+                    let new_form = widget::issue::new_form(context, theme).to_boxed();
+                    app.remount(Cid::Issue(IssueCid::NewForm), new_form, vec![])?;
+                    app.active(&Cid::Issue(IssueCid::NewForm))?;
+                }
+            }
+            Message::Issue(IssueMessage::ClosePopup(cid)) => {
+                app.blur()?;
+                app.umount(&Cid::Issue(cid))?;
+            }
             _ => {}
         }
 
@@ -223,7 +236,13 @@ impl ViewPage for IssuePage {
         let layout = layout::issue_preview(area, shortcuts_h);
 
         app.view(&Cid::Issue(IssueCid::List), frame, layout.left);
-        app.view(&Cid::Issue(IssueCid::Discussion), frame, layout.right);
+
+        if app.mounted(&Cid::Issue(IssueCid::NewForm)) {
+            app.view(&Cid::Issue(IssueCid::NewForm), frame, layout.right);
+        } else {
+            app.view(&Cid::Issue(IssueCid::Discussion), frame, layout.right);
+        }
+
         app.view(&Cid::Issue(IssueCid::Shortcuts), frame, layout.shortcuts);
     }
 
