@@ -36,6 +36,7 @@ pub struct Colors {
     pub context_color_fg: Color,
     pub container_border_fg: Color,
     pub container_border_focus_fg: Color,
+    pub input_placeholder_fg: Color,
 }
 
 #[derive(Debug, Clone)]
@@ -105,6 +106,7 @@ pub fn default_dark() -> Theme {
             context_color_fg: Color::Cyan,
             container_border_fg: COLOR_DEFAULT_DARKEST,
             container_border_focus_fg: COLOR_DEFAULT_DARK,
+            input_placeholder_fg: COLOR_DEFAULT_DARK,
         },
         icons: Icons {
             property_divider: '∙',
