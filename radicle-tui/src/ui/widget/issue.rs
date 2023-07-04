@@ -15,6 +15,7 @@ use super::common::container::Container;
 use super::common::container::LabeledContainer;
 use super::common::context::ContextBar;
 use super::common::context::Progress;
+use super::common::form::Form;
 use super::common::label::Textarea;
 use super::common::list::List;
 use super::common::list::Property;
@@ -23,7 +24,6 @@ use super::Widget;
 use crate::ui::cob;
 use crate::ui::cob::IssueItem;
 use crate::ui::context::Context;
-use crate::ui::state::FormState;
 use crate::ui::theme::Theme;
 
 use super::*;
@@ -252,14 +252,14 @@ impl WidgetComponent for CommentBody {
 pub struct NewForm {
     /// The issue this form writes its input values to.
     _issue: Issue,
-    // This form's fields: title, tags, assignees, description.
-    inputs: Vec<Input>,
-    /// State that holds the current focus etc.
-    state: FormState,
+    /// The actual form.
+    form: Widget<Form>,
 }
 
 impl NewForm {
-    pub fn new(_context: &Context, theme: &Theme) -> Self {
+    pub fn new(theme: &Theme) -> Self {
+        use tuirealm::props::Layout;
+
         let foreground = theme.colors.default_fg;
         let placeholder_style = Style::default().fg(theme.colors.input_placeholder_fg);
         let inactive_style = Style::default().fg(theme.colors.container_border_fg);
@@ -288,42 +288,35 @@ impl NewForm {
             .inactive(inactive_style)
             .placeholder("Description", placeholder_style);
 
-        let state = FormState::new(Some(0), 4);
+        let mut form = Widget::new(Form::new(
+            theme.clone(),
+            vec![title, tags, assignees, description],
+        ));
+        form.attr(
+            Attribute::Layout,
+            AttrValue::Layout(
+                Layout::default().constraints(
+                    [
+                        Constraint::Length(3),
+                        Constraint::Length(3),
+                        Constraint::Length(3),
+                        Constraint::Min(3),
+                    ]
+                    .as_ref(),
+                ),
+            ),
+        );
 
         Self {
             _issue: Issue::default(),
-            inputs: vec![title, tags, assignees, description],
-            state,
+            form,
         }
     }
 }
 
 impl WidgetComponent for NewForm {
     fn view(&mut self, _properties: &Props, frame: &mut Frame, area: Rect) {
-        // Clear and set current focus
-        let focus = self.state.focus().unwrap_or(0);
-        for input in &mut self.inputs {
-            input.attr(Attribute::Focus, AttrValue::Flag(false));
-        }
-        if let Some(input) = self.inputs.get_mut(focus) {
-            input.attr(Attribute::Focus, AttrValue::Flag(true));
-        }
-
-        let layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(3),
-                Constraint::Length(3),
-                Constraint::Length(3),
-                Constraint::Min(3),
-            ])
-            .split(area);
-
-        for (index, area) in layout.iter().enumerate().take(self.inputs.len()) {
-            if let Some(input) = self.inputs.get_mut(index) {
-                input.view(frame, *area);
-            }
-        }
+        self.form.view(frame, area);
     }
 
     fn state(&self) -> State {
@@ -331,25 +324,7 @@ impl WidgetComponent for NewForm {
     }
 
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
-        use tuirealm::command::Direction;
-        match cmd {
-            Cmd::Move(Direction::Up) => {
-                self.state.focus_previous();
-                CmdResult::None
-            }
-            Cmd::Move(Direction::Down) => {
-                self.state.focus_next();
-                CmdResult::None
-            }
-            _ => {
-                let focus = self.state.focus().unwrap_or(0);
-                if let Some(input) = self.inputs.get_mut(focus) {
-                    input.perform(cmd)
-                } else {
-                    CmdResult::None
-                }
-            }
-        }
+        self.form.perform(cmd)
     }
 }
 
@@ -373,8 +348,8 @@ pub fn description(
     Widget::new(body)
 }
 
-pub fn new_form(context: &Context, theme: &Theme) -> Widget<NewForm> {
-    let form = NewForm::new(context, theme);
+pub fn new_form(_context: &Context, theme: &Theme) -> Widget<NewForm> {
+    let form = NewForm::new(theme);
     Widget::new(form)
 }
 
