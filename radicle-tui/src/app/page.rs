@@ -1,15 +1,18 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 
 use radicle::cob::issue::{Issue, IssueId};
 use radicle::cob::patch::{Patch, PatchId};
 
 use radicle_tui::cob;
+use radicle_tui::ui::widget::common::context::Shortcuts;
 use tuirealm::{Frame, NoUserEvent, Sub, SubClause};
 
 use radicle_tui::ui::context::Context;
 use radicle_tui::ui::layout;
 use radicle_tui::ui::theme::Theme;
-use radicle_tui::ui::widget;
+use radicle_tui::ui::widget::{self, Widget};
 
 use super::{subscription, Application, Cid, HomeCid, IssueCid, IssueMessage, Message, PatchCid};
 
@@ -148,11 +151,60 @@ impl ViewPage for HomeView {
 ///
 pub struct IssuePage {
     issue: (IssueId, Issue),
+    shortcuts: HashMap<IssueCid, Widget<Shortcuts>>,
 }
 
 impl IssuePage {
-    pub fn new(issue: (IssueId, Issue)) -> Self {
-        IssuePage { issue }
+    pub fn new(_context: &Context, theme: &Theme, issue: (IssueId, Issue)) -> Self {
+        let shortcuts = Self::build_shortcuts(theme);
+        IssuePage { issue, shortcuts }
+    }
+
+    fn build_shortcuts(theme: &Theme) -> HashMap<IssueCid, Widget<Shortcuts>> {
+        [
+            (
+                IssueCid::List,
+                widget::common::shortcuts(
+                    theme,
+                    vec![
+                        widget::common::shortcut(theme, "esc", "back"),
+                        widget::common::shortcut(theme, "↑/↓", "navigate"),
+                        widget::common::shortcut(theme, "n", "new issue"),
+                        widget::common::shortcut(theme, "q", "quit"),
+                    ],
+                ),
+            ),
+            (
+                IssueCid::NewForm,
+                widget::common::shortcuts(
+                    theme,
+                    vec![
+                        widget::common::shortcut(theme, "esc", "back"),
+                        widget::common::shortcut(theme, "shift + tab / tab", "navigate"),
+                        widget::common::shortcut(theme, "alt + s", "submit"),
+                    ],
+                ),
+            ),
+        ]
+        .iter()
+        .cloned()
+        .collect()
+    }
+
+    fn show_shortcuts(
+        &self,
+        app: &mut Application<Cid, Message, NoUserEvent>,
+        cid: IssueCid,
+    ) -> Result<()> {
+        if let Some(shortcuts) = self.shortcuts.get(&cid) {
+            app.remount(
+                Cid::Issue(IssueCid::Shortcuts),
+                shortcuts.clone().to_boxed(),
+                vec![],
+            )?;
+        }
+
+        Ok(())
     }
 }
 
@@ -167,21 +219,12 @@ impl ViewPage for IssuePage {
         let list = widget::issue::list(context, theme, (*id, issue.clone())).to_boxed();
         let discussion =
             widget::issue::issue_discussion(context, theme, (*id, issue.clone())).to_boxed();
-        let shortcuts = widget::common::shortcuts(
-            theme,
-            vec![
-                widget::common::shortcut(theme, "esc", "back"),
-                widget::common::shortcut(theme, "o", "open"),
-                widget::common::shortcut(theme, "q", "quit"),
-            ],
-        )
-        .to_boxed();
 
         app.remount(Cid::Issue(IssueCid::List), list, vec![])?;
         app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
-        app.remount(Cid::Issue(IssueCid::Shortcuts), shortcuts, vec![])?;
 
         app.active(&Cid::Issue(IssueCid::List))?;
+        self.show_shortcuts(app, IssueCid::List)?;
 
         Ok(())
     }
@@ -216,13 +259,17 @@ impl ViewPage for IssuePage {
             Message::Issue(IssueMessage::OpenPopup(cid)) => {
                 if cid == IssueCid::NewForm {
                     let new_form = widget::issue::new_form(context, theme).to_boxed();
-                    app.remount(Cid::Issue(IssueCid::NewForm), new_form, vec![])?;
-                    app.active(&Cid::Issue(IssueCid::NewForm))?;
+                    app.remount(Cid::Issue(cid.clone()), new_form, vec![])?;
+                    app.active(&Cid::Issue(cid.clone()))?;
+
+                    self.show_shortcuts(app, cid)?;
                 }
             }
             Message::Issue(IssueMessage::ClosePopup(cid)) => {
                 app.blur()?;
                 app.umount(&Cid::Issue(cid))?;
+
+                self.show_shortcuts(app, IssueCid::List)?;
             }
             _ => {}
         }
