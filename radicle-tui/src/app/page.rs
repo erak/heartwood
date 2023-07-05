@@ -231,7 +231,9 @@ impl ViewPage for IssuePage {
 
     fn unmount(&self, app: &mut Application<Cid, Message, NoUserEvent>) -> Result<()> {
         app.umount(&Cid::Issue(IssueCid::List))?;
-        app.umount(&Cid::Issue(IssueCid::NewForm))?;
+        if app.mounted(&Cid::Issue(IssueCid::NewForm)) {
+            app.umount(&Cid::Issue(IssueCid::NewForm))?;
+        }
         app.umount(&Cid::Issue(IssueCid::Discussion))?;
         app.umount(&Cid::Issue(IssueCid::Shortcuts))?;
         Ok(())
