@@ -11,7 +11,8 @@ use context::{Shortcut, Shortcuts};
 use label::Label;
 use list::{Property, PropertyList};
 
-use self::container::Container;
+use self::container::{Container, Popup};
+use self::label::Textarea;
 use self::list::{ColumnWidth, PropertyTable};
 
 use super::Widget;
@@ -121,4 +122,34 @@ pub fn tabs(theme: &Theme, tabs: Vec<Widget<Label>>) -> Widget<Tabs> {
     let tabs = Tabs::new(tabs, line);
 
     Widget::new(tabs).height(2)
+}
+
+pub fn info(theme: &Theme, message: &str) -> Widget<Popup> {
+    let textarea =
+        Widget::new(Textarea::new(theme.clone())).content(AttrValue::String(message.to_owned()));
+    let container = labeled_container(theme, "Info", textarea.to_boxed());
+
+    Widget::new(Popup::new(theme.clone(), container))
+        .width(50)
+        .height(20)
+}
+
+pub fn warning(theme: &Theme, message: &str) -> Widget<Popup> {
+    let textarea =
+        Widget::new(Textarea::new(theme.clone())).content(AttrValue::String(message.to_owned()));
+    let container = labeled_container(theme, "Warning", textarea.to_boxed());
+
+    Widget::new(Popup::new(theme.clone(), container))
+        .width(50)
+        .height(20)
+}
+
+pub fn error(theme: &Theme, message: &str) -> Widget<Popup> {
+    let textarea =
+        Widget::new(Textarea::new(theme.clone())).content(AttrValue::String(message.to_owned()));
+    let container = labeled_container(theme, "Error", textarea.to_boxed());
+
+    Widget::new(Popup::new(theme.clone(), container))
+        .width(50)
+        .height(20)
 }

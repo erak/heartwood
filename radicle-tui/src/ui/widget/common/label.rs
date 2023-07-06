@@ -161,7 +161,7 @@ impl WidgetComponent for Textarea {
         frame.render_widget(paragraph, layout[0]);
 
         let len = body.height();
-        let height = layout[0].height - 1;
+        let height = layout[0].height.saturating_sub(1);
 
         self.scroll_percent = Self::scroll_percent(self.offset, len, height as usize);
 
