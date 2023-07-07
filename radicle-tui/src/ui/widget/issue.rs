@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use radicle_cli::terminal::format;
 
 use radicle::cob::issue::Issue;
@@ -6,6 +8,7 @@ use radicle::Profile;
 
 use tuirealm::props::Color;
 use tuirealm::tui::layout::{Constraint, Direction, Layout};
+use tuirealm::StateValue;
 
 use super::common::container::{Container, LabeledContainer};
 use super::common::form::Form;
@@ -185,6 +188,11 @@ pub struct NewForm {
 }
 
 impl NewForm {
+    pub const INPUT_TITLE: &str = "title";
+    pub const INPUT_TAGS: &str = "tags";
+    pub const INPUT_ASSIGNESS: &str = "assignees";
+    pub const INPUT_DESCRIPTION: &str = "description";
+
     pub fn new(theme: &Theme) -> Self {
         use tuirealm::props::Layout;
 
@@ -233,8 +241,25 @@ impl WidgetComponent for NewForm {
     fn perform(&mut self, _properties: &Props, cmd: Cmd) -> CmdResult {
         match self.form.perform(cmd) {
             CmdResult::Submit(State::Vec(values)) => {
-                println!("{:?}", values);
-                CmdResult::None
+                let inputs = HashMap::from([
+                    (
+                        Self::INPUT_TITLE.to_owned(),
+                        values.get(0).unwrap_or(&StateValue::None).clone(),
+                    ),
+                    (
+                        Self::INPUT_TAGS.to_owned(),
+                        values.get(1).unwrap_or(&StateValue::None).clone(),
+                    ),
+                    (
+                        Self::INPUT_ASSIGNESS.to_owned(),
+                        values.get(2).unwrap_or(&StateValue::None).clone(),
+                    ),
+                    (
+                        Self::INPUT_DESCRIPTION.to_owned(),
+                        values.get(3).unwrap_or(&StateValue::None).clone(),
+                    ),
+                ]);
+                CmdResult::Submit(State::Map(inputs))
             }
             _ => CmdResult::None,
         }
