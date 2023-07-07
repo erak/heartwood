@@ -66,6 +66,7 @@ pub enum IssueMessage {
     Focus(IssueCid),
     OpenPopup(IssueCid),
     ClosePopup(IssueCid),
+    New(String, String, String, String),
     Leave,
 }
 
@@ -180,6 +181,7 @@ impl App {
                 self.pages.pop(app)?;
                 Ok(None)
             }
+            Message::Issue(IssueMessage::New(_title, _tags, _assignees, _description)) => Ok(None),
             Message::Patch(PatchMessage::Show(id)) => {
                 self.view_patch(app, id, &theme)?;
                 Ok(None)
