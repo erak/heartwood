@@ -2,7 +2,7 @@ pub mod event;
 pub mod page;
 pub mod subscription;
 
-use anyhow::Result;
+use anyhow::{Result};
 
 use radicle::cob::issue::IssueId;
 use radicle::cob::patch::PatchId;
@@ -10,6 +10,7 @@ use radicle::identity::{Id, Project};
 use radicle::prelude::Signer;
 use radicle::profile::Profile;
 
+use radicle_cli::terminal::args::format;
 use radicle_tui::ui::widget;
 use tuirealm::application::PollStrategy;
 use tuirealm::{Application, Frame, NoUserEvent, Sub, SubClause};
@@ -65,6 +66,7 @@ pub enum IssueMessage {
     Show(IssueId),
     Changed(IssueId),
     Focus(IssueCid),
+    Created(IssueId),
     OpenPopup(IssueCid),
     ClosePopup(IssueCid),
     New(String, String, String, String),
@@ -182,7 +184,20 @@ impl App {
                 self.pages.pop(app)?;
                 Ok(None)
             }
-            Message::Issue(IssueMessage::New(_title, _tags, _assignees, _description)) => Ok(None),
+            Message::Issue(IssueMessage::New(title, tags, assignees, description)) => {
+                match self.create_issue(title, description, tags, assignees) {
+                    Ok(id) => {
+                        let info = format!("Issue created: {}.", id);
+                        self.show_info_popup(app, &theme, &info)?;
+                        Ok(Some(Message::Issue(IssueMessage::Created(id))))
+                    }
+                    Err(err) => {
+                        let error = format!("{:?}", err);
+                        self.show_error_popup(app, &theme, &error)?;
+                        Ok(None)
+                    }
+                }
+            },
             Message::Patch(PatchMessage::Show(id)) => {
                 self.view_patch(app, id, &theme)?;
                 Ok(None)
@@ -262,6 +277,29 @@ impl App {
         app.umount(&Cid::Popup)?;
 
         Ok(())
+    }
+
+    fn create_issue(
+        &mut self,
+        title: String,
+        description: String,
+        tags: String,
+        assignees: String,
+    ) -> Result<IssueId> {
+        let repository = self.context.repository();
+        let signer = self.context.signer();
+
+        let tags = cob::parse_tags(tags);
+        let assignees = cob::parse_assigness(assignees);
+
+        cob::issue::create(
+            repository,
+            signer,
+            title,
+            description,
+            tags.as_slice(),
+            assignees.as_slice(),
+        )
     }
 }
 

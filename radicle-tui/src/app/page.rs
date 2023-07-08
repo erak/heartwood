@@ -280,6 +280,28 @@ impl ViewPage for IssuePage {
 
                 self.show_shortcuts(app, IssueCid::List)?;
             }
+            Message::Issue(IssueMessage::Created(id)) => {
+                let repo = context.repository();
+
+                app.blur()?;
+                app.umount(&Cid::Issue(IssueCid::NewForm))?;
+
+                app.subscribe(
+                    &Cid::GlobalListener,
+                    Sub::new(subscription::global_clause(), SubClause::Always),
+                )?;
+
+                if let Some(issue) = cob::issue::find(repo, &id)? {
+                    let list = widget::issue::list(context, theme, (id, issue.clone())).to_boxed();
+                    let discussion =
+                        widget::issue::issue_discussion(context, theme, (id, issue)).to_boxed();
+
+                    app.remount(Cid::Issue(IssueCid::List), list, vec![])?;
+                    app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
+                }
+
+                self.show_shortcuts(app, IssueCid::List)?;
+            }
             _ => {}
         }
 
