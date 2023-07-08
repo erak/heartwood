@@ -40,7 +40,7 @@ pub trait ViewPage {
         context: &Context,
         theme: &Theme,
         message: Message,
-    ) -> Result<()>;
+    ) -> Result<Option<Message>>;
 
     /// Will be called whenever a view page is on top of the page stack and needs to be rendered.
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame);
@@ -107,13 +107,13 @@ impl ViewPage for HomeView {
         _context: &Context,
         _theme: &Theme,
         message: Message,
-    ) -> Result<()> {
+    ) -> Result<Option<Message>> {
         if let Message::NavigationChanged(index) = message {
             self.active_component = Cid::Home(HomeCid::from(index as usize));
         }
         app.active(&self.active_component)?;
 
-        Ok(())
+        Ok(None)
     }
 
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
@@ -201,7 +201,7 @@ impl ViewPage for IssuePage {
         context: &Context,
         theme: &Theme,
         message: Message,
-    ) -> Result<()> {
+    ) -> Result<Option<Message>> {
         if let Message::Issue(IssueMessage::Changed(id)) = message {
             let repo = context.repository();
             if let Some(issue) = cob::issue::find(repo, &id)? {
@@ -211,7 +211,7 @@ impl ViewPage for IssuePage {
         }
         app.active(&self.active_component)?;
 
-        Ok(())
+        Ok(None)
     }
 
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
@@ -284,13 +284,13 @@ impl ViewPage for PatchView {
         _context: &Context,
         _theme: &Theme,
         message: Message,
-    ) -> Result<()> {
+    ) -> Result<Option<Message>> {
         if let Message::NavigationChanged(index) = message {
             self.active_component = Cid::Patch(PatchCid::from(index as usize));
         }
         app.active(&self.active_component)?;
 
-        Ok(())
+        Ok(None)
     }
 
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
