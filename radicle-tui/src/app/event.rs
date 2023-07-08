@@ -12,7 +12,7 @@ use radicle_tui::ui::widget::{issue, patch};
 
 use radicle_tui::ui::widget::Widget;
 
-use super::{IssueMessage, Message, PatchMessage, PopupMessage, IssueCid};
+use super::{IssueCid, IssueCobMessage, IssueMessage, Message, PatchMessage, PopupMessage};
 
 /// Since the framework does not know the type of messages that are being
 /// passed around in the app, the following handlers need to be implemented for
@@ -79,10 +79,9 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::LargeList> {
                 code: Key::Enter, ..
             }) => Some(Message::Issue(IssueMessage::Focus(IssueCid::Details))),
             Event::Keyboard(KeyEvent {
-                code: Key::Char('n'), ..
-            }) => {
-                Some(Message::Issue(IssueMessage::OpenPopup(IssueCid::NewForm)))
-            }
+                code: Key::Char('n'),
+                ..
+            }) => Some(Message::Issue(IssueMessage::OpenForm)),
             _ => None,
         }
     }
@@ -155,7 +154,7 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::NewForm> {
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Char('s'),
-                modifiers: KeyModifiers::ALT,
+                modifiers: KeyModifiers::CONTROL,
             }) => {
                 match self.perform(Cmd::Submit) {
                     CmdResult::Submit(State::Map(inputs)) => {
@@ -194,19 +193,19 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::NewForm> {
                             let error = format!("Missing fields: {:?}", missing_values);
                             Some(Message::Popup(PopupMessage::Error(error)))
                         } else {
-                            Some(Message::Issue(IssueMessage::New(
-                                title.unwrap(),
-                                tags.unwrap(),
-                                assignees.unwrap(),
-                                description.unwrap(),
-                            )))
+                            Some(Message::Issue(IssueMessage::Cob(IssueCobMessage::Create {
+                                title: title.unwrap(),
+                                tags: tags.unwrap(),
+                                assignees: assignees.unwrap(),
+                                description: description.unwrap(),
+                            })))
                         }
                     }
                     _ => None,
                 }
             }
             Event::Keyboard(KeyEvent { code: Key::Esc, .. }) => {
-                Some(Message::Issue(IssueMessage::ClosePopup(IssueCid::NewForm)))
+                Some(Message::Issue(IssueMessage::HideForm))
             }
             Event::Keyboard(KeyEvent {
                 code: Key::BackTab, ..
