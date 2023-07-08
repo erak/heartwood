@@ -1,4 +1,4 @@
-use radicle::prelude::{Id, Project};
+use radicle::prelude::{Id, Project, Signer};
 use radicle::Profile;
 
 use radicle::storage::git::Repository;
@@ -9,16 +9,18 @@ pub struct Context {
     id: Id,
     project: Project,
     repository: Repository,
+    signer: Box<dyn Signer>,
 }
 
 impl Context {
-    pub fn new(profile: Profile, id: Id, project: Project) -> Self {
+    pub fn new(profile: Profile, id: Id, project: Project, signer: Box<dyn Signer>) -> Self {
         let repository = profile.storage.repository(id).unwrap();
         Self {
             id,
             profile,
             project,
             repository,
+            signer
         }
     }
 
@@ -36,5 +38,9 @@ impl Context {
 
     pub fn repository(&self) -> &Repository {
         &self.repository
+    }
+
+    pub fn signer(&self) -> &Box<dyn Signer> {
+        &self.signer
     }
 }
