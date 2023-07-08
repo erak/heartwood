@@ -254,9 +254,11 @@ impl ViewPage for IssuePage {
                         widget::issue::issue_discussion(context, theme, (id, issue)).to_boxed();
                     app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
                 }
+                Ok(None)
             }
             Message::Issue(IssueMessage::Focus(cid)) => {
                 app.active(&Cid::Issue(cid))?;
+                Ok(None)
             }
             Message::Issue(IssueMessage::OpenPopup(cid)) => {
                 if cid == IssueCid::NewForm {
@@ -268,6 +270,7 @@ impl ViewPage for IssuePage {
 
                     self.show_shortcuts(app, cid)?;
                 }
+                Ok(None)
             }
             Message::Issue(IssueMessage::ClosePopup(cid)) => {
                 app.blur()?;
@@ -279,17 +282,10 @@ impl ViewPage for IssuePage {
                 )?;
 
                 self.show_shortcuts(app, IssueCid::List)?;
+                Ok(None)
             }
             Message::Issue(IssueMessage::Created(id)) => {
                 let repo = context.repository();
-
-                app.blur()?;
-                app.umount(&Cid::Issue(IssueCid::NewForm))?;
-
-                app.subscribe(
-                    &Cid::GlobalListener,
-                    Sub::new(subscription::global_clause(), SubClause::Always),
-                )?;
 
                 if let Some(issue) = cob::issue::find(repo, &id)? {
                     let list = widget::issue::list(context, theme, (id, issue.clone())).to_boxed();
@@ -300,12 +296,10 @@ impl ViewPage for IssuePage {
                     app.remount(Cid::Issue(IssueCid::Discussion), discussion, vec![])?;
                 }
 
-                self.show_shortcuts(app, IssueCid::List)?;
+                Ok(Some(Message::Issue(IssueMessage::ClosePopup(IssueCid::NewForm))))
             }
-            _ => {}
+            _ => Ok(None)
         }
-
-        Ok(None)
     }
 
     fn view(&mut self, app: &mut Application<Cid, Message, NoUserEvent>, frame: &mut Frame) {
