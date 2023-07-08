@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use radicle_cli::terminal::format;
-
 use radicle::cob::issue::Issue;
 use radicle::cob::issue::IssueId;
+use radicle::cob::thread::Comment;
+use radicle::cob::thread::CommentId;
 use tuirealm::tui::layout::Constraint;
 use tuirealm::tui::layout::Direction;
 use tuirealm::tui::layout::Layout;
 
-use tuirealm::props::Color;
-use tuirealm::tui::layout::{Constraint, Direction, Layout};
 use tuirealm::StateValue;
 
 use super::common::container::{Container, LabeledContainer};
+use super::common::context::ContextBar;
+use super::common::context::Progress;
 use super::common::form::Form;
 use super::common::label::Textarea;
 use super::common::list::List;
