@@ -53,23 +53,23 @@ pub enum Cid {
 }
 
 /// Messages handled by this application.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HomeMessage {}
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum IssueMessage {
     Show(IssueId),
     Changed(IssueId),
     Leave,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PatchMessage {
     Show(PatchId),
     Leave,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
     Home(HomeMessage),
     Issue(IssueMessage),
@@ -77,6 +77,7 @@ pub enum Message {
     NavigationChanged(u16),
     Tick,
     Quit,
+    Batch(Vec<Message>),
 }
 
 #[allow(dead_code)]
@@ -157,6 +158,19 @@ impl App {
     ) -> Result<Option<Message>> {
         let theme = theme::default_dark();
         match message {
+            Message::Batch(messages) => {
+                let mut results = vec![];
+                for message in messages {
+                    if let Some(result) = self.process(app, message)? {
+                        results.push(result);
+                    }
+                }
+                match results.len() {
+                    0 => Ok(None),
+                    1 => Ok(Some(results[0].to_owned())),
+                    _ => Ok(Some(Message::Batch(results))),
+                }
+            }
             Message::Issue(IssueMessage::Show(id)) => {
                 self.view_issue(app, id, &theme)?;
                 Ok(None)
