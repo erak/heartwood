@@ -116,6 +116,31 @@ impl HomeView {
         .collect()
     }
 
+    fn update_context(
+        &self,
+        app: &mut Application<Cid, Message, NoUserEvent>,
+        theme: &Theme,
+        cid: HomeCid,
+    ) -> Result<()> {
+        let context = match cid {
+            HomeCid::IssueBrowser => {
+                let context = widget::issue::browse_context(theme);
+                Some(context)
+            }
+            HomeCid::PatchBrowser => {
+                let context = widget::patch::browse_context(theme);
+                Some(context)
+            }
+            _ => None,
+        };
+
+        if let Some(context) = context {
+            app.remount(Cid::Home(HomeCid::Context), context.to_boxed(), vec![])?;
+        }
+
+        Ok(())
+    }
+
     fn update_shortcuts(
         &self,
         app: &mut Application<Cid, Message, NoUserEvent>,
@@ -154,6 +179,7 @@ impl ViewPage for HomeView {
         let active_component = Cid::Home(self.active_component.clone());
         app.active(&active_component)?;
         self.update_shortcuts(app, self.active_component.clone())?;
+        self.update_context(app, theme, self.active_component.clone())?;
 
         Ok(())
     }
@@ -163,6 +189,8 @@ impl ViewPage for HomeView {
         app.umount(&Cid::Home(HomeCid::Dashboard))?;
         app.umount(&Cid::Home(HomeCid::IssueBrowser))?;
         app.umount(&Cid::Home(HomeCid::PatchBrowser))?;
+        app.umount(&Cid::Home(HomeCid::Context))?;
+        app.umount(&Cid::Home(HomeCid::Shortcuts))?;
         Ok(())
     }
 
@@ -170,7 +198,7 @@ impl ViewPage for HomeView {
         &mut self,
         app: &mut Application<Cid, Message, NoUserEvent>,
         _context: &Context,
-        _theme: &Theme,
+        theme: &Theme,
         message: Message,
     ) -> Result<Option<Message>> {
         if let Message::NavigationChanged(index) = message {
@@ -178,7 +206,9 @@ impl ViewPage for HomeView {
 
             let active_component = Cid::Home(self.active_component.clone());
             app.active(&active_component)?;
+
             self.update_shortcuts(app, self.active_component.clone())?;
+            self.update_context(app, theme, self.active_component.clone())?;
         }
 
         Ok(None)
@@ -195,6 +225,11 @@ impl ViewPage for HomeView {
             frame,
             layout.component,
         );
+
+        if self.active_component != HomeCid::Dashboard {
+            app.view(&Cid::Home(HomeCid::Context), frame, layout.context);
+        }
+
         app.view(&Cid::Home(HomeCid::Shortcuts), frame, layout.shortcuts);
     }
 

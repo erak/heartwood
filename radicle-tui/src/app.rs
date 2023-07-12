@@ -27,6 +27,7 @@ pub enum HomeCid {
     Dashboard,
     IssueBrowser,
     PatchBrowser,
+    Context,
     Shortcuts,
 }
 
