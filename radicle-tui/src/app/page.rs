@@ -6,8 +6,8 @@ use radicle::cob::issue::{Issue, IssueId};
 use radicle::cob::patch::{Patch, PatchId};
 
 use radicle_tui::cob;
-use radicle_tui::ui::widget::common::context::Shortcuts;
-use tuirealm::{Frame, NoUserEvent, Sub, SubClause};
+use radicle_tui::ui::widget::common::context::{Progress, Shortcuts};
+use tuirealm::{Frame, NoUserEvent, StateValue, Sub, SubClause};
 
 use radicle_tui::ui::context::Context;
 use radicle_tui::ui::layout;
@@ -119,16 +119,33 @@ impl HomeView {
     fn update_context(
         &self,
         app: &mut Application<Cid, Message, NoUserEvent>,
+        context: &Context,
         theme: &Theme,
         cid: HomeCid,
     ) -> Result<()> {
+        use tuirealm::State;
+
         let context = match cid {
             HomeCid::IssueBrowser => {
-                let context = widget::issue::browse_context(theme);
+                let state = app.state(&Cid::Home(HomeCid::IssueBrowser))?;
+                let progress = match state {
+                    State::Tup2((StateValue::Usize(step), StateValue::Usize(total))) => {
+                        Progress::Step(step, total)
+                    }
+                    _ => Progress::None,
+                };
+                let context = widget::issue::browse_context(context, theme, progress);
                 Some(context)
             }
             HomeCid::PatchBrowser => {
-                let context = widget::patch::browse_context(theme);
+                let state = app.state(&Cid::Home(HomeCid::PatchBrowser))?;
+                let progress = match state {
+                    State::Tup2((StateValue::Usize(step), StateValue::Usize(total))) => {
+                        Progress::Step(step, total)
+                    }
+                    _ => Progress::None,
+                };
+                let context = widget::patch::browse_context(context, theme, progress);
                 Some(context)
             }
             _ => None,
@@ -179,7 +196,7 @@ impl ViewPage for HomeView {
         let active_component = Cid::Home(self.active_component.clone());
         app.active(&active_component)?;
         self.update_shortcuts(app, self.active_component.clone())?;
-        self.update_context(app, theme, self.active_component.clone())?;
+        self.update_context(app, context, theme, self.active_component.clone())?;
 
         Ok(())
     }
@@ -197,7 +214,7 @@ impl ViewPage for HomeView {
     fn update(
         &mut self,
         app: &mut Application<Cid, Message, NoUserEvent>,
-        _context: &Context,
+        context: &Context,
         theme: &Theme,
         message: Message,
     ) -> Result<Option<Message>> {
@@ -208,8 +225,9 @@ impl ViewPage for HomeView {
             app.active(&active_component)?;
 
             self.update_shortcuts(app, self.active_component.clone())?;
-            self.update_context(app, theme, self.active_component.clone())?;
         }
+
+        self.update_context(app, context, theme, self.active_component.clone())?;
 
         Ok(None)
     }
