@@ -12,6 +12,7 @@ pub struct DefaultPage {
 pub struct IssuePage {
     pub left: Rect,
     pub right: Rect,
+    pub context: Rect,
     pub shortcuts: Rect,
 }
 
@@ -149,14 +150,19 @@ pub fn centered_label(label_w: u16, area: Rect) -> Rect {
 }
 
 pub fn issue_page(area: Rect, shortcuts_h: u16) -> IssuePage {
-    let content_h = area.height.saturating_sub(shortcuts_h);
+    let context_h = 1u16;
+    let margin_h = 1u16;
+    let content_h = area
+        .height
+        .saturating_sub(context_h.saturating_add(shortcuts_h));
 
     let root = Layout::default()
         .direction(Direction::Vertical)
-        .horizontal_margin(1)
+        .horizontal_margin(margin_h)
         .constraints(
             [
                 Constraint::Length(content_h),
+                Constraint::Length(context_h),
                 Constraint::Length(shortcuts_h),
             ]
             .as_ref(),
@@ -171,6 +177,7 @@ pub fn issue_page(area: Rect, shortcuts_h: u16) -> IssuePage {
     IssuePage {
         left: split[0],
         right: split[1],
-        shortcuts: root[1],
+        context: root[1],
+        shortcuts: root[2],
     }
 }
