@@ -364,6 +364,10 @@ impl IssuePage {
                 let context = widget::issue::description_context(context, theme, progress);
                 Some(context)
             }
+            IssueCid::Form => {
+                let context = widget::issue::form_context(context, theme, Progress::None);
+                Some(context)
+            }
             _ => None,
         };
 
@@ -507,6 +511,7 @@ impl ViewPage for IssuePage {
                     Sub::new(subscription::global_clause(), SubClause::Always),
                 )?;
 
+                self.activate(app, IssueCid::List)?;
                 self.update_shortcuts(app, IssueCid::List)?;
             }
             _ => {}
