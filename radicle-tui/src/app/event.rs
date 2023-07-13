@@ -225,6 +225,13 @@ impl tuirealm::Component<Message, NoUserEvent> for Widget<issue::NewForm> {
                 Some(Message::Tick)
             }
             Event::Keyboard(KeyEvent {
+                code: Key::Char('v'),
+                modifiers: KeyModifiers::CONTROL,
+            }) => {
+                self.perform(Cmd::Custom(TextInput::CMD_PASTE));
+                Some(Message::Tick)
+            }
+            Event::Keyboard(KeyEvent {
                 code: Key::Char(ch),
                 ..
             }) => {
