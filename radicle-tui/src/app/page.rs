@@ -283,7 +283,8 @@ impl IssuePage {
     pub fn new(theme: Theme, issue: (IssueId, Issue)) -> Self {
         let shortcuts = Self::build_shortcuts(&theme);
         let active_component = IssueCid::List;
-        IssuePage {
+        
+        Self {
             issue,
             active_component,
             shortcuts,
