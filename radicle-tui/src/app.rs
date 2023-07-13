@@ -274,7 +274,7 @@ impl App {
         theme: &Theme,
         message: &str,
     ) -> Result<()> {
-        let popup = widget::common::info(&theme, &message);
+        let popup = widget::common::info(theme, message);
         app.remount(Cid::Popup, popup.to_boxed(), vec![])?;
         app.active(&Cid::Popup)?;
 
@@ -287,7 +287,7 @@ impl App {
         theme: &Theme,
         message: &str,
     ) -> Result<()> {
-        let popup = widget::common::warning(&theme, &message);
+        let popup = widget::common::warning(theme, message);
         app.remount(Cid::Popup, popup.to_boxed(), vec![])?;
         app.active(&Cid::Popup)?;
 
@@ -300,7 +300,7 @@ impl App {
         theme: &Theme,
         message: &str,
     ) -> Result<()> {
-        let popup = widget::common::error(&theme, &message);
+        let popup = widget::common::error(theme, message);
         app.remount(Cid::Popup, popup.to_boxed(), vec![])?;
         app.active(&Cid::Popup)?;
 
